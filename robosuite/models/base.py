@@ -31,6 +31,7 @@ class MujocoXML(object):
         self.asset = self.create_default_element("asset")
         self.equality = self.create_default_element("equality")
         self.contact = self.create_default_element("contact")
+        self.sensor = self.create_default_element("sensor")
         self.default = self.create_default_element("default")
         self.resolve_asset_dependency()
 
@@ -79,6 +80,8 @@ class MujocoXML(object):
             self.equality.append(one_equality)
         for one_contact in other.contact:
             self.contact.append(one_contact)
+        for one_sensor in other.sensor:
+            self.sensor.append(one_sensor)
         for one_default in other.default:
             self.default.append(one_default)
         # self.config.append(other.config)

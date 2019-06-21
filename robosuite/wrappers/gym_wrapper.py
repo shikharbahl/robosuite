@@ -7,12 +7,13 @@ interface.
 import numpy as np
 from gym import spaces
 from robosuite.wrappers import Wrapper
+from collections import deque 
 
 
 class GymWrapper(Wrapper):
     env = None
 
-    def __init__(self, env, keys=None):
+    def __init__(self, env, keys=None, obs_stack_size =1):
         """
         Initializes the Gym wrapper.
 
@@ -28,15 +29,17 @@ class GymWrapper(Wrapper):
             assert self.env.use_object_obs, "Object observations need to be enabled."
             keys = ["robot-state", "object-state"]
         self.keys = keys
+        self.obs_stack_size = obs_stack_size
+        self.obs_stack = deque()
 
         # set up observation and action spaces
         flat_ob = self._flatten_obs(self.env.reset(), verbose=True)
         self.obs_dim = flat_ob.size
         high = np.inf * np.ones(self.obs_dim)
         low = -high
-        self.observation_space = spaces.Box(low=low, high=high)
+        self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
         low, high = self.env.action_spec
-        self.action_space = spaces.Box(low=low, high=high)
+        self.action_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
     def _flatten_obs(self, obs_dict, verbose=False):
         """
@@ -50,10 +53,30 @@ class GymWrapper(Wrapper):
             if key in self.keys:
                 if verbose:
                     print("adding key: {}".format(key))
-                ob_lst.append(obs_dict[key])
-        return np.concatenate(ob_lst)
+                if len(np.array(obs_dict[key]).shape) == 1: #vector
+                    ob_lst.append(obs_dict[key])
+                else:
+                    ob_lst.append(np.array(obs_dict[key]).flatten())
+        concatenated = np.concatenate(ob_lst)
+
+        # Managing the stack of observations
+        if not self.obs_stack:
+            for repeated_first_obs in range(self.obs_stack_size):
+                self.obs_stack.append(concatenated)
+        else:
+            self.obs_stack.pop()
+            self.obs_stack.appendleft(concatenated)
+
+        # Read current stack of observations
+        obs = []
+        for ob in self.obs_stack:
+            obs.append(ob)
+        obs = np.concatenate(obs)
+
+        return obs
 
     def reset(self):
+        self.obs_stack = deque()
         ob_dict = self.env.reset()
         return self._flatten_obs(ob_dict)
 

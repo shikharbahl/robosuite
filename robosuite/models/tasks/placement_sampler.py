@@ -290,3 +290,78 @@ class UniformRandomPegsSampler(ObjectPositionSampler):
         self.n_obj = len(self.mujoco_objects)
         self.table_top_offset = table_top_offset
         self.table_size = table_size
+
+
+class DeterministicPositionSampler(ObjectPositionSampler):
+    """
+        Places all objects within the table uniformly random
+    """
+    def __init__(self, x_pos=None, 
+                    y_pos=None, 
+                    ensure_object_boundary_in_range=True,
+                    z_rotation='random'):
+        """
+        Args:
+            x_range(float * 2): override the x_range used to uniformly place objects
+                    if None, default to x-range of table
+            y_range(float * 2): override the y_range used to uniformly place objects
+                    if None default to y-range of table
+            x_range and y_range are both with respect to (0,0) = center of table.
+            ensure_object_boundary_in_range:
+                True: The center of object is at position:
+                     [uniform(min x_range + radius, max x_range - radius)], [uniform(min x_range + radius, max x_range - radius)]
+                False: 
+                    [uniform(min x_range, max x_range)], [uniform(min x_range, max x_range)]
+            z_rotation:
+                None: Add uniform random random z-rotation
+                iterable (a,b): Uniformly randomize rotation angle between a and b (in radians)
+                value: Add fixed angle z-rotation
+        """
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.ensure_object_boundary_in_range = ensure_object_boundary_in_range
+        self.z_rotation = z_rotation
+
+    def sample_quat(self):
+        if self.z_rotation is None:
+            rot_angle = np.random.uniform(high=2 * np.pi,low=0)
+        elif isinstance(self.z_rotation, collections.Iterable):
+            rot_angle = np.random.uniform(high=max(self.z_rotation),low=min(self.z_rotation))
+        else:
+            rot_angle = self.z_rotation
+
+        return [np.cos(rot_angle / 2), 0, 0, np.sin(rot_angle / 2)]
+
+    def sample(self):
+        pos_arr = []
+        quat_arr = []
+        placed_objects = []
+        index = 0
+        for obj_mjcf in self.mujoco_objects:
+            horizontal_radius = obj_mjcf.get_horizontal_radius()
+            bottom_offset = obj_mjcf.get_bottom_offset()
+            success = False
+            location_valid = True
+            for x, y, r in placed_objects:
+                if np.linalg.norm([self.x_pos - x, self.y_pos - y], 2) <= r + horizontal_radius:
+                    location_valid = False
+                    break
+            if location_valid: 
+                # location is valid, put the object down
+                pos = self.table_top_offset - bottom_offset + np.array([self.x_pos, self.y_pos, 0])
+                placed_objects.append((self.x_pos, self.y_pos, horizontal_radius))
+                # random z-rotation
+
+                quat = self.sample_quat()
+
+                quat_arr.append(quat)
+                pos_arr.append(pos)
+                success = True
+                break
+
+                # bad luck, reroll
+            if not success:
+                raise RandomizationError('Cannot place all objects on the desk')
+            index += 1
+        return pos_arr, quat_arr
+        

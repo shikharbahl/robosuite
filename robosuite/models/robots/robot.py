@@ -60,3 +60,7 @@ class Robot(MujocoXML):
     def init_qpos(self):
         """Returns default qpos."""
         raise NotImplementedError
+
+    @property
+    def model_name(self):
+        return self._model_name

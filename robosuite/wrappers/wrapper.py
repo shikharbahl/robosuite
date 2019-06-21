@@ -47,6 +47,14 @@ class Wrapper:
     def dof(self):
         return self.env.dof
 
+    #TODO: do we need this?
+    def render_additional_image(self, camera_name, camera_width, camera_height, camera_depth):
+        img = self.env.render_additional_image(camera_name=camera_name,
+                         camera_width=camera_width,
+                         camera_height=camera_height,
+                         camera_depth=camera_depth)
+        return img
+
     @property
     def unwrapped(self):
         if hasattr(self.env, "unwrapped"):

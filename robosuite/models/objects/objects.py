@@ -276,7 +276,7 @@ class MujocoGeneratedObject(MujocoObject):
             main_body.set("name", name)
         template = self.get_collision_attrib_template()
         if name is not None:
-            template["name"] = name
+            template["name"] = name + "_col"
         template["type"] = ob_type
         template["rgba"] = array_to_string(self.rgba)
         template["size"] = array_to_string(self.size)
@@ -285,17 +285,21 @@ class MujocoGeneratedObject(MujocoObject):
         main_body.append(ET.Element("geom", attrib=template))
         if site:
             # add a site as well
-            template = self.get_site_attrib_template()
+            template_site = self.get_site_attrib_template()
             if name is not None:
-                template["name"] = name
-            main_body.append(ET.Element("site", attrib=template))
+                template_site["name"] = name + "_site"
+            template_site["type"] = template["type"]
+            template_site["size"] = template["size"]
+            template_site["rgba"] = template["rgba"]
+            main_body.append(ET.Element("site", attrib=template_site))
+
         return main_body
 
     def _get_visual(self, name=None, site=False, ob_type="box"):
         main_body = ET.Element("body")
         if name is not None:
             main_body.set("name", name)
-        template = self.get_visual_attrib_template()
+        template_site = self.get_site_attrib_template()
         template["type"] = ob_type
         template["rgba"] = array_to_string(self.rgba)
         template["size"] = array_to_string(self.size)
@@ -304,6 +308,10 @@ class MujocoGeneratedObject(MujocoObject):
             # add a site as well
             template = self.get_site_attrib_template()
             if name is not None:
-                template["name"] = name
-            main_body.append(ET.Element("site", attrib=template))
+                template_site["name"] = template["name"] + "_site"
+            template_site["type"] = template["type"]
+            template_site["size"] = template["size"]
+            template_site["rgba"] = template["rgba"]
+            main_body.append(ET.Element("site", attrib=template_site))
+
         return main_body
