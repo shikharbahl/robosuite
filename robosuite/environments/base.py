@@ -29,7 +29,7 @@ class EnvMeta(type):
         cls = super().__new__(meta, name, bases, class_dict)
 
         # List all environments that should not be registered here.
-        _unregistered_envs = ["MujocoEnv", "SawyerEnv", "BaxterEnv"]
+        _unregistered_envs = ["MujocoEnv", "SawyerEnv", "BaxterEnv", "PandaEnv"]
 
         if cls.__name__ not in _unregistered_envs:
             register_env(cls)
@@ -89,7 +89,8 @@ class MujocoEnv(metaclass=EnvMeta):
             camera_depth (bool): True if rendering RGB-D, and RGB otherwise.
         """
 
-        self.has_renderer = has_renderer
+        self.has_renderer = has_renderer and not use_camera_obs
+        self.visualize_offscreen = has_renderer and use_camera_obs
         self.has_offscreen_renderer = has_offscreen_renderer
         self.render_collision_mesh = render_collision_mesh
         self.render_visual_mesh = render_visual_mesh
@@ -195,11 +196,16 @@ class MujocoEnv(metaclass=EnvMeta):
             raise ValueError("executing action in terminated episode")
 
         self.timestep += 1
-        self._pre_action(action)
-        end_time = self.cur_time + self.control_timestep
-        while self.cur_time < end_time:
+
+        policy_step = True
+        for i in range(int(self.control_timestep/self.model_timestep)):
+            self._pre_action(action, policy_step)
             self.sim.step()
-            self.cur_time += self.model_timestep
+            policy_step = False
+
+        # Note: this is done all at once to avoid floating point inaccuracies
+        self.cur_time += self.control_timestep
+
         reward, done, info = self._post_action(action)
         return self._get_observation(), reward, done, info
 
@@ -327,3 +333,10 @@ class MujocoEnv(metaclass=EnvMeta):
     def close(self):
         """Do any cleanup necessary here."""
         self._destroy_viewer()
+
+    @property
+    def sensor_data(self):
+        """
+        Get the sensors matrix
+        """
+        return self.sim.data.sensordata
