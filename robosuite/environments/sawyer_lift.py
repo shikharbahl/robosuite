@@ -9,6 +9,7 @@ from robosuite.models.objects import BoxObject
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 
+from robosuite.environments.controller import *
 
 class SawyerLift(SawyerEnv):
     """
@@ -37,6 +38,8 @@ class SawyerLift(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        use_impedance=True, # ADDED
+        controller=ControllerType.POS, 
     ):
         """
         Args:
@@ -133,6 +136,8 @@ class SawyerLift(SawyerEnv):
             camera_height=camera_height,
             camera_width=camera_width,
             camera_depth=camera_depth,
+            controller=controller,
+            use_impedance=use_impedance,
         )
 
     def _load_model(self):

@@ -22,6 +22,7 @@ from robosuite.models.objects import (
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import PickPlaceTask, UniformRandomSampler
 
+from robosuite.environments.controller import *
 
 class SawyerPickPlace(SawyerEnv):
     def __init__(
@@ -48,6 +49,8 @@ class SawyerPickPlace(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        use_impedance=True, # ADDED
+        controller=ControllerType.POS, 
     ):
         """
         Args:
@@ -163,6 +166,8 @@ class SawyerPickPlace(SawyerEnv):
             camera_height=camera_height,
             camera_width=camera_width,
             camera_depth=camera_depth,
+            controller=controller,
+            use_impedance=use_impedance,
         )
 
         # reward configuration
