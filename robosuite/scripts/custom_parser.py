@@ -1,10 +1,11 @@
 import argparse
 import json
-from robosuite.environments.controller import *
 import os
-from gym import logger
 import subprocess
+
+from gym import logger
 from colorama import Fore, Back, Style
+from robosuite.environments.controller import *
 
 default_config_file = os.path.join(os.getcwd(), os.path.dirname(__file__), 'default.json')
 
@@ -159,7 +160,7 @@ def custom_arg_parser():
     parser.add_argument("--starting_timestep", help="Which timestep to start TensorBoard logging on", type=int)
     parser.add_argument('--reward_scale', help='Reward scale factor.', type=float)
     parser.add_argument('--seed', help='RNG seed', type=int)
-    parser.add_argument("--data_logging", type=str2bool, const=True, nargs='?')
+    parser.add_argument("--data_logging", type=str2bool, const=False, nargs='?')
     parser.add_argument("--logging_filename", type=str)
     parser.add_argument("--results_aggregation_file", type=str)
     parser.add_argument("--real_robot", help="Using real robot instead of simulated", type=str2bool, const=True, nargs='?')
@@ -221,6 +222,8 @@ def load_defaults(args):
         with open(args.config_file) as f:
             existing_args = json.load(f)
         apply_args(existing_args)
+
+    ### TODO: is this okay or do I need defaults.json? ###
 
     # apply overall defaults
     # NOTE: likely won't have any effect if config_file was set, but may provide back-compatibility
@@ -288,28 +291,28 @@ def validate_configuration(args):
         print("WARNING: ENTROPY SCHEDULING AND ANNEALING ARE BEING USED TOGETHER")
         print("-"*80)
 
-    if not args.log_dir:
-        exit("--log-dir not set! Either set ROBOSUITE_LOG_DIR environment variable, or declare on the command line")
+    # if not args.log_dir:
+    #     exit("--log-dir not set! Either set ROBOSUITE_LOG_DIR environment variable, or declare on the command line")
 
-    if args.use_camera_obs and "LD_PRELOAD" in os.environ:
-        if os.environ["LD_PRELOAD"] != "":
-            logger.error(Fore.RED + 'LD_PRELOAD should not be an env variable if you want to use offscreen rendering. ')
-            logger.error('Try export LD_PRELOAD=\"\"')
-            logger.error(Fore.WHITE + "")
-            exit(-1)
+    # if args.use_camera_obs and "LD_PRELOAD" in os.environ:
+    #     if os.environ["LD_PRELOAD"] != "":
+    #         logger.error(Fore.RED + 'LD_PRELOAD should not be an env variable if you want to use offscreen rendering. ')
+    #         logger.error('Try export LD_PRELOAD=\"\"')
+    #         logger.error(Fore.WHITE + "")
+    #         exit(-1)
 
-    if args.visualize and not args.use_camera_obs and "LD_PRELOAD" not in os.environ:
-        logger.error(Fore.RED + 'LD_PRELOAD should be an env variable if you want to use onscreen rendering.')
-        logger.error('Try export LD_PRELOAD=\"path_to_your_libGLEW.so\"')
-        logger.error(Fore.WHITE + "")
-        exit(-1)
+    # if args.visualize and not args.use_camera_obs and "LD_PRELOAD" not in os.environ:
+    #     logger.error(Fore.RED + 'LD_PRELOAD should be an env variable if you want to use onscreen rendering.')
+    #     logger.error('Try export LD_PRELOAD=\"path_to_your_libGLEW.so\"')
+    #     logger.error(Fore.WHITE + "")
+    #     exit(-1)
 
-    if args.visualize and not args.use_camera_obs and "LD_PRELOAD" in os.environ:
-        if os.environ["LD_PRELOAD"] == "":
-            logger.error(Fore.RED + 'LD_PRELOAD should be an env variable if you want to use onscreen rendering.')
-            logger.error('Try export LD_PRELOAD=\"path_to_your_libGLEW.so\"')
-            logger.error(Fore.WHITE + "")
-            exit(-1)
+    # if args.visualize and not args.use_camera_obs and "LD_PRELOAD" in os.environ:
+    #     if os.environ["LD_PRELOAD"] == "":
+    #         logger.error(Fore.RED + 'LD_PRELOAD should be an env variable if you want to use onscreen rendering.')
+    #         logger.error('Try export LD_PRELOAD=\"path_to_your_libGLEW.so\"')
+    #         logger.error(Fore.WHITE + "")
+    #         exit(-1)
 
     if args.max_schedule_ent != 0 and args.entropy_coef == 0:
         logger.error(Fore.RED + 'You have set a schedule for the entropy but the ent_coef is zero. Change that!')

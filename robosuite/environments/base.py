@@ -53,6 +53,7 @@ class MujocoEnv(metaclass=EnvMeta):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        **kwargs,
     ):
         """
         Args:

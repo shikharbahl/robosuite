@@ -160,12 +160,12 @@ class WipeForceEnv(RobotArmEnv):
         self.mujoco_arena = WipeForceTableArena(table_full_size= table_full_size_sampled,
                                        table_friction=self.table_friction,
                                        table_friction_std=self.table_friction_std,
-                                       num_squares= self.num_squares if not self.real_robot else 0,
+                                       num_squares= self.num_squares,
                                        prob_sensor=self.prob_sensor,
                                        rotation_x=np.random.normal(0, self.table_rot_x),
                                        rotation_y=np.random.normal(0, self.table_rot_y),
                                        draw_line=self.draw_line,
-                                       num_sensors= self.num_sensors if not self.real_robot else 0,
+                                       num_sensors= self.num_sensors,
                                        line_width= self.line_width,
                                        two_clusters= self.two_clusters
 
@@ -400,9 +400,9 @@ class WipeForceEnv(RobotArmEnv):
                 acc = np.concatenate([acc, di['sensor' + str(sensor_id) + '_pos'] ])
                 acc = np.concatenate([acc, [[0,1][sensor_id in self.wiped_sensors]] ])
                 # proprioception
-                if self.use_robot_obs:
-                    di['gripper_to_sensor'+str(sensor_id)] = gripper_position - sensor_pos
-                    acc = np.concatenate([acc, di['gripper_to_sensor' + str(sensor_id)] ])
+                # if self.use_robot_obs:
+                di['gripper_to_sensor'+str(sensor_id)] = gripper_position - sensor_pos
+                acc = np.concatenate([acc, di['gripper_to_sensor' + str(sensor_id)] ])
             di['object-state'] = acc
 
             # for sensor_name in self.model.arena.sensor_names:    

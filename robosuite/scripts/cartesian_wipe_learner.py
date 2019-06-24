@@ -1,174 +1,17 @@
 #!/usr/bin/env python3
 
+import os
+import time
+import numpy as np
+
 from robosuite import *
 from robosuite.wrappers import GymWrapper
-import numpy as np
-import time
-from PIL import Image
-from IPython import embed
 from robosuite.models import *
 from robosuite.wrappers import DataCollectionWrapper
 from robosuite.models.tasks import *
-from gym import wrappers, logger
-import time
-from baselines.common import tf_util as U
-from baselines import bench, logger
-from datetime import datetime
-import os
-from colorama import Fore, Back, Style
-from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-from baselines.common import set_global_seeds
-from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
-import json
-from calculate_metrics import calculate_metrics
 from robosuite.scripts.custom_parser import custom_arg_parser, load_defaults, serialize_args
 from robosuite.environments.controller import *
-
-try:
-    from real_kuka_gym.envs.robot_transfer_env import RobotTransferEnv
-    from real_kuka_gym.envs.panda_images_and_proprio_wipe_env import PandaImagesAndProprioWipeEnv
-    from real_kuka_gym.envs.real_panda_door_env import RealPandaDoorEnv
-
-except:
-    print("WARNING: real_kuka_gym python code not found!!")
-
-import os
-import cv2
-import tensorflow as tf
-from baselines.common.tf_util import get_session
-import csv
-
-try:
-    import real_kuka_gym
-    import gym
-    from real_kuka_gym.envs.robot_transfer_env import RobotTransferEnv
-except ImportError:
-    logger.error(Fore.BLUE + "WARNING: Couldn't load modules for real robot!")
-    logger.error(Fore.BLUE + "Ignore if you are not working on the real robot")
-    logger.error(Fore.WHITE + "")
-
-
-def train_ppo2(env, args, save_model):
-    from baselines.common.vec_env.vec_monitor import VecMonitor
-    from baselines.ppo2 import ppo2
-
-    env = VecMonitor(env)
     
-    def eval_model(savepath):
-        args.ncpu = 1
-        args.replay = True
-        args.stochastic_replay = False
-        args.model = savepath
-        envs = createEnvironments(args)
-        pi = load_policy(envs, args, prefix='eval_policy')
-        obs = envs.reset()
-        epinfo = None
-        while True:
-            actions = pi.step(obs)[0]
-            obs, rewards, done, infos  = envs.step(actions)
-            envs.render2()
-            if done:
-                epinfo = infos[0]
-                break
-        envs.close()
-
-        if 'add_vals' in epinfo.keys():
-            for add_val in epinfo['add_vals']:
-                logger.logkv(add_val+'deterministic', epinfo[add_val])
-
-        logger.info("Now saving deterministic data")
-
-    proprio_dim = 13    # This is cartesian pose (7) and vel (6)
-    if not args.only_cartesian_obs:
-        proprio_dim += 14 # q and qvel
-    if args.use_contact_obs:
-        proprio_dim += 1    # Binary contact sensor
-
-    model = ppo2.learn(
-        network=args.network, 
-        env=env, 
-        nsteps=args.nsteps, 
-        nminibatches=args.nminibatches,
-        max_grad_norm=args.max_grad_norm,
-        vf_coef=args.value_func_coef,
-        lam=args.lam, 
-        gamma=float(args.discount_factor), 
-        noptepochs=args.n_epochs_per_update, 
-        log_interval=1,
-        ent_coef=args.entropy_coef,
-        lr=float(args.learning_rate),
-        cliprange=args.clip_range,
-        total_timesteps=args.num_timesteps,
-        using_mujocomanip=True,
-        save_interval = 1,
-        load_path = args.model, 
-        num_hidden=args.num_hidden, 
-        num_layers=args.num_layers,
-        resolution=args.camera_res,
-        starting_timestep=args.starting_timestep,
-        callback_func=eval_model if args.plot_deterministic_policy else None,
-        max_schedule_ent=args.max_schedule_ent,
-        proprio_dim=proprio_dim,
-        cnn_small= args.cnn_small,
-        logstd_anneal_start=args.logstd_anneal_start,
-        logstd_anneal_end=args.logstd_anneal_end
-    )
-
-    return model
-
-def train(
-        env,
-        args,
-        save_model):
-
-    if args.algorithm == 'ppo2':
-        return train_ppo2(env, args, save_model)
-    elif args.algorithm == 'td3':
-        return train_td3(env, args, save_model)
-    else:
-        logger.error("Algorithm '{}' not supported!".format(args.algorithm))
-    
-    
-def load_policy(env, args, prefix='learned_policy'):
-    from baselines.ppo2.ppo2 import Model
-    from baselines.common.policies import build_policy
-
-    # TODO - not sure where 7 and 6 came from
-    proprio_dim = 13    # This is cartesian pose (7) and vel (6)
-    if not args.only_cartesian_obs:
-        proprio_dim += 14 # q and qvel TODO - should this be robot-dependent? not sure if we'll have robots with fewer DoF
-    if args.use_contact_obs:
-        proprio_dim += 1    # Binary contact sensor
-    
-    policy_builder = build_policy(env,
-                          args.network,
-                          stochastic=args.stochastic_replay,
-                          num_hidden=args.num_hidden,
-                          num_layers=args.num_layers,
-                          resolution=args.camera_res,
-                          initial_logstd=args.logstd_anneal_start,
-                          proprio_dim=proprio_dim,
-                          cnn_small=args.cnn_small)
-    
-    nbatch = env.num_envs * args.nsteps
-    nbatch_train = nbatch // args.nminibatches
-
-    # use prefix to ensure no overlap
-    with tf.variable_scope(prefix):
-        pi = Model(policy=policy_builder,
-                   ob_space=env.observation_space,
-                   ac_space=env.action_space,
-                   nbatch_act=env.num_envs,
-                   nbatch_train=nbatch_train,
-                   nsteps=args.nsteps,
-                   ent_coef=args.entropy_coef,
-                   vf_coef=args.value_func_coef,
-                   max_grad_norm=args.max_grad_norm,
-                   use_entropy_scheduler=(args.max_schedule_ent != 0),
-                   training=False)
-        pi.load(args.model, prefix=prefix)
-    return pi
-
 def configureController(args):
     # note everything is in world frame! 
     controller_args = {}
@@ -367,34 +210,29 @@ def createEnvironments(args):
         args_env["allow_early_end"] = args.allow_early_end
         args_env["random_point_order"] = args.random_point_order
         args_env["point_randomization"] = args.point_randomization
-        
-    elif args.task == "RealRobotTransfer":
-        subproc = DummyVecEnv([lambda: RobotTransferEnv()])
-        subproc.envs[0].horizon = 0
-        return subproc
 
-    elif args.task == "PandaImagesAndProprioWipe":
-        subproc = DummyVecEnv([lambda: PandaImagesAndProprioWipeEnv(
-            controller_type = args.controller,
-            impedance_flag=args.use_impedance,
-            camera_res= args.camera_res,
-            use_contact = True)])
-        subproc.envs[0].horizon = 0
+    # elif args.task == "PandaImagesAndProprioWipe":
+    #     subproc = DummyVecEnv([lambda: PandaImagesAndProprioWipeEnv(
+    #         controller_type = args.controller,
+    #         impedance_flag=args.use_impedance,
+    #         camera_res= args.camera_res,
+    #         use_contact = True)])
+    #     subproc.envs[0].horizon = 0
 
-        return subproc
+    #     return subproc
 
-    elif args.task == "RealPandaDoorEnv":
-        subproc = DummyVecEnv([lambda: RealPandaDoorEnv(
-            controller_type = args.controller,
-            impedance_flag=args.use_impedance,
-            use_contact = True)])
-        subproc.envs[0].horizon = 0
+    # elif args.task == "RealPandaDoorEnv":
+    #     subproc = DummyVecEnv([lambda: RealPandaDoorEnv(
+    #         controller_type = args.controller,
+    #         impedance_flag=args.use_impedance,
+    #         use_contact = True)])
+    #     subproc.envs[0].horizon = 0
 
-        return subproc
+    #     return subproc
 
-    else:
-        logger.error("Wrong task name")
-        logger.error(args.task)
+    # else:
+    #     logger.error("Wrong task name")
+    #     logger.error(args.task)
 
     observations_keys = ["robot-state"]
 
@@ -413,151 +251,34 @@ def createEnvironments(args):
     if args.use_delta_impedance:
         observations_keys += ["controller_kp", "controller_damping"]
 
-    # Makes debugging easier; appears to be necessary for initial policies
-    if args.ncpu == 1 and not args.use_camera_obs:
-        return DummyVecEnv([lambda: GymWrapper(
-            make(args.robot.capitalize()+args.task+"Env", **args_env),
-            keys=observations_keys,
-            obs_stack_size=args.obs_stack_size
-        )])
-    
-    return SubprocVecEnv([lambda: GymWrapper(
+    return GymWrapper(
         make(args.robot.capitalize()+args.task+"Env", **args_env),
         keys=observations_keys,
         obs_stack_size=args.obs_stack_size
-        ) for i in range(args.ncpu)]) 
+    )
 
 def main(args):
     """
     Train or replay agents with various controllers. 
     See custom_parser.py for a breakdown of arguments with help text.
     """
-    today = datetime.now()
-    if not args.replay or args.force_new_folder:
-        dir_name = args.log_dir + today.strftime('%Y-%m-%d--%H-%M-%S')
-        dir_name += serialize_args(user_specified) + '_' + args.log_suffix
-    else:
-        # log to subfolder of original model
-        dir_name = os.path.abspath(os.path.dirname(args.model)+"/../../replay_")
-        dir_name += os.path.basename(args.model)+'_'
-        dir_name += today.strftime('%Y-%m-%d--%H-%M-%S')
-    
-    args.log_dir = dir_name
-    os.mkdir(dir_name)
-    os.mkdir(dir_name + '/logging')
-    logger.configure(dir_name + '/logging', starting_timestep=args.starting_timestep)
-    logger.set_level(logger.DEBUG if not args.quiet else logger.INFO)
 
-    if args.data_logging and args.logging_filename is None:
-        args.logging_filename = args.log_dir + "/sim_" + today.strftime('%Y-%m-%d-%H%M%S') + ".h5"
-    
-    logger.info(Fore.RED + 'Logging saved in ' + dir_name + '/logging')
-    logger.info("Current config: ", args)
+    env = createEnvironments(args)
+    print(env)
 
-    # dump config
-    with open(os.path.join(dir_name, 'config.json'), 'w') as f:
-        json.dump(vars(args), f, indent=4, sort_keys=True)
+    env.reset()
+    # env.viewer.set_camera(camera_id=0)
 
-    # set up TensorFlow session
-    config = tf.ConfigProto(allow_soft_placement=True,
-                        intra_op_parallelism_threads=args.ncpu,
-                        inter_op_parallelism_threads=args.ncpu)
-    tf.Session(config=config).__enter__()
-    set_global_seeds(args.seed)
-
-        
-    # load initial policy (for residual policy learning)
-    if args.initial_policy is not None:
-        initial_policy_config = os.path.dirname(args.initial_policy)+"/../../config.json"
-        if not os.path.isfile(initial_policy_config):
-            if args.initial_policy == 'ik_free_space_traj':
-                args.initial_policy = None # TODO
-            else:
-                logger.error("Policy '{}' not found!".format(args.initial_policy))
-        else:
-            with open(initial_policy_config, 'r') as f:
-                from argparse import Namespace
-                initial_policy_args = Namespace(**json.load(f))
-                initial_policy_args.replay = True
-                initial_policy_args.ncpu = 1
-                initial_policy_args.model = args.initial_policy
-                initial_policy_args.initial_policy = None
-            initial_policy_env = createEnvironments(initial_policy_args)
-            args.initial_policy = load_policy(initial_policy_env, initial_policy_args, prefix='initial-policy')
-            args.initial_policy.env = initial_policy_env.envs[0]
-            
-    envs = createEnvironments(args)
-
-    # Create a new environment to render images in the real robot experiments
-    if args.real_robot:
-        # All real robot experiments are on WipeForce
-        args.task = "WipeForce"
-        rendering_env = createEnvironments(args)
-        envs.envs[0]._mujoco_env_render = rendering_env
-        q_inits = envs.envs[0].q_inits
-        
-    # If not visualizing a pretrained model -> Train
-    if not args.replay:
-        logger.info(Fore.WHITE + 'Dimensions of the action space: {}'.format(envs.action_space))
-        logger.info('Dimensions of the observation space: {}'.format(envs.observation_space))
-        logger.info('Num timesteps: {}'.format(args.num_timesteps))
-
-        import time
-        start = time.time()
-        pi = train(envs, args, save_model=True)
-        logger.info(Fore.WHITE + 'Training time: ' + str((time.time() - start)/60.0) + ' minutes')
-
-    # If visualizing a pretrained model -> Replay
-    else:
-        logger.info(Fore.WHITE)
-        pi = load_policy(envs, args)
-        obs = envs.reset()
-
-        done = False
-
-        # Set initial joint configuration
-        if args.with_qinits:
-            qinit_now = q_inits[np.random.choice(len(q_inits))]
-            envs.set_robot_joint_positions(np.array(qinit_now))
-
-        # Endless loop for replay unless we are data logging
-        while True:
-            actions = pi.step(obs)[0]            
-
-            obs, _, done, _  = envs.step(actions)
-
-            # If we use a sim robot, render the view
-            if not args.real_robot:            
-                if args.use_camera_obs :
-                    img_ext = envs.render_ext()                
-                    img_ext = np.flip(img_ext[0][...,::-1], 0)
-                    cv2.imshow('External View',img_ext)
-                    cv2.waitKey(10)
-                else:
-                    envs.render2()
-
-            done = done.any() if isinstance(done, np.ndarray) else done
-
-            if done:
-                # if it is done and we are logging data, we stop
-                if args.data_logging:
-                    break
-                # if it is done but not logging data, we reset envs and continue
-                else: 
-                    envs.reset()
-                    if args.with_qinits:                    
-                        qinit_now = q_inits[np.random.choice(len(q_inits))]
-                        envs.set_robot_joint_positions(np.array(qinit_now))
-                envs.reset()
-        envs.close()
-        if args.data_logging and args.results_aggregation_file is not None:
-            calculate_metrics(args.task, args.logging_filename, args.results_aggregation_file)
+    # do visualization
+    for i in range(1000):
+        action = np.random.randn(env.dof)
+        obs, reward, done, _ = env.step(action)
+        env.render()
     
 if __name__ == '__main__':
     parser = custom_arg_parser()
     args = parser.parse_args()
-    # cache the args that were explicitly set by the user on the command line
-    user_specified = {key: value for key, value in vars(args).items() if value is not None}
+
     # Note: this will issue errors in the event of an invalid configuration
     load_defaults(args)
 

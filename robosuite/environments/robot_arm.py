@@ -130,7 +130,7 @@ class RobotArmEnv(MujocoEnv):
         self.total_damping = np.zeros(6)
 
         self.n_avg_ee_acc = 10
-        super(RobotArmEnv,self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # Current and previous policy step q values, joint torques, ft ee applied and actions
         self.prev_pstep_ft = np.zeros(6)
@@ -220,7 +220,8 @@ class RobotArmEnv(MujocoEnv):
                 self.gripper.hide_visualization()
             self.mujoco_robot.add_gripper("right_hand", self.gripper)
 
-        self.controller.initial_joint = self.mujoco_robot.init_qpos
+        if self.impedance_ctrl:
+            self.controller.initial_joint = self.mujoco_robot.init_qpos
 
     def _reset_internal(self):
         """

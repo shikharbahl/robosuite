@@ -2,16 +2,16 @@ from collections import OrderedDict
 import numpy as np
 
 from robosuite.utils.transform_utils import convert_quat
-from robosuite.environments.sawyer import SawyerEnv
+from robosuite.environments.robot_arm import RobotArmEnv
+# from robosuite.environments.sawyer import SawyerEnv
 
 from robosuite.models.arenas import TableArena
 from robosuite.models.objects import BoxObject
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 
-from robosuite.environments.controller import *
-
-class SawyerLift(SawyerEnv):
+#class SawyerLift(SawyerEnv):
+class SawyerLift(RobotArmEnv):
     """
     This class corresponds to the lifting task for the Sawyer robot arm.
     """
@@ -38,8 +38,7 @@ class SawyerLift(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
-        use_impedance=True, # ADDED
-        controller=ControllerType.POS, 
+        **kwargs,
     ):
         """
         Args:
@@ -120,6 +119,33 @@ class SawyerLift(SawyerEnv):
                 z_rotation=True,
             )
 
+        # super().__init__(
+        #     gripper_type=gripper_type,
+        #     gripper_visualization=gripper_visualization,
+        #     use_indicator_object=use_indicator_object,
+        #     has_renderer=has_renderer,
+        #     has_offscreen_renderer=has_offscreen_renderer,
+        #     render_collision_mesh=render_collision_mesh,
+        #     render_visual_mesh=render_visual_mesh,
+        #     control_freq=control_freq,
+        #     horizon=horizon,
+        #     ignore_done=ignore_done,
+        #     use_camera_obs=use_camera_obs,
+        #     camera_name=camera_name,
+        #     camera_height=camera_height,
+        #     camera_width=camera_width,
+        #     camera_depth=camera_depth,
+        # )
+
+        # hardcoding some kwargs for now 
+        kwargs['robot_type'] = "Sawyer"
+        kwargs['logging_filename'] = None
+        kwargs['only_cartesian_obs'] = False
+        kwargs['data_logging'] = False
+        kwargs['reward_scale'] = 1.
+        kwargs['controller'] = None
+        kwargs['impedance_ctrl'] = False
+
         super().__init__(
             gripper_type=gripper_type,
             gripper_visualization=gripper_visualization,
@@ -136,8 +162,7 @@ class SawyerLift(SawyerEnv):
             camera_height=camera_height,
             camera_width=camera_width,
             camera_depth=camera_depth,
-            controller=controller,
-            use_impedance=use_impedance,
+            **kwargs,
         )
 
     def _load_model(self):
