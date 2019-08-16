@@ -24,7 +24,7 @@ os.makedirs(log_dir, exist_ok=True)
 
 def callback(_locals, _globals):
     global n_steps, best_mean_reward
-    if (n_steps + 1) % 75 == 0:
+    if (n_steps + 1) % 3 == 0:
         x, y = ts2xy(load_results(log_dir), 'timesteps')
         if len(x) > 0:
             mean_reward = np.mean(y[-100:])
