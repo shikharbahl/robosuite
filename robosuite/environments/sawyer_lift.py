@@ -196,9 +196,9 @@ class SawyerLift(SawyerEnv):
         self.model.place_objects()
 
         # reset joint positions
-        #init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
-        #init_pos += np.random.randn(init_pos.shape[0]) * 0.02
-        #self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
+        init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
+        init_pos += np.random.randn(init_pos.shape[0]) * 0.02
+        self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
 
     def reward(self, action=None):
         """
@@ -327,7 +327,7 @@ class SawyerLift(SawyerEnv):
         table_height = self.table_full_size[2]
 
         # cube is higher than the table top above a margin
-        return cube_height > table_height + 0.08
+        return cube_height > table_height + 0.04
 
     def _gripper_visualization(self):
         """
