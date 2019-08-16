@@ -40,10 +40,10 @@ def callback(_locals, _globals):
 
 def main():
     num_stack = 4
-    num_env = 8
-    render = False
+    num_env = 1
+    render = True
     image_state = False
-    subproc = True
+    subproc = False
     existing = None
     markov_obs = True
     #arch = CnnLstmPolicy # MlpLstmPolicy  # MlpPolicy
@@ -76,23 +76,16 @@ def main():
     if existing:
         print('Loading pkl directly')
         model = PPO2.load(existing)
-        model.set_env(env)
     else:
-        try:
-            print('Trying existing model...')
-            model = PPO2.load(log_dir + 'best_model.pkl')
-            model.set_env(env)
-        except:
-            print('No existing model found. Training new one.')
-            model = PPO2(arch, env, verbose=1, nminibatches=num_env)
+        print('Trying existing model...')
+        model = PPO2.load(log_dir + 'best_model.pkl')
 
-    model.learn(total_timesteps=int(1e8), callback=callback)
+    #model.learn(total_timesteps=int(1e0), callback=callback)
 
     if render:
         obs = env.reset()
         while True:
-            print(obs.shape)
-            assert False
+            obs = np.tile(obs, (8, 1))
             action, _states = model.predict(obs)
             obs, rewards, done, info = env.step(action)
             env._get_target_envs([0])[0].render()
