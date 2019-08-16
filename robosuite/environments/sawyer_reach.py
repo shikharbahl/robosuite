@@ -227,7 +227,8 @@ class SawyerReach(SawyerEnv):
         """
         gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
         dist = np.linalg.norm(self.target_pos - gripper_site_pos)
-        return dist < 0.02
+        print(dist)
+        return dist < 0.05
 
     def _gripper_visualization(self):
         """
@@ -252,3 +253,4 @@ class SawyerReach(SawyerEnv):
             rgba[3] = 0.5
         
             self.sim.model.site_rgba[self.eef_site_id] = rgba
+
