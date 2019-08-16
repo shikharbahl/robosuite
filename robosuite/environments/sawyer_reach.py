@@ -31,7 +31,7 @@ class SawyerReach(SawyerEnv):
         has_offscreen_renderer=True,
         render_collision_mesh=False,
         render_visual_mesh=True,
-        control_freq=100,
+        control_freq=10,
         horizon=1000,
         ignore_done=False,
         camera_name="frontview",
@@ -128,12 +128,12 @@ class SawyerReach(SawyerEnv):
         """
         super()._reset_internal()
         self.target_pos = np.array([self.table_full_size[0] / 2 + .28, 0, self.table_full_size[2] + .2])
-        self.target_pos[:-1] += np.random.uniform(-0.05, 0.05, (2,))
+        self.target_pos += np.random.uniform(-0.05, 0.05, (3,))
         self.move_indicator(self.target_pos)
 
         # reset joint positions
         init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
-        init_pos += np.random.randn(init_pos.shape[0]) * 0.05
+        init_pos += np.random.randn(init_pos.shape[0]) * 0.08
         self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
 
     def reward(self, action=None):
