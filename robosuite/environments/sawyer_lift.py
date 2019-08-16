@@ -222,10 +222,14 @@ class SawyerLift(SawyerEnv):
 
         # sparse completion reward
         if self._check_success():
+            print('success!')
             reward = 1.
 
         # use a shaping reward
         if self.reward_shaping:
+            cube_height = np.round(self.sim.data.body_xpos[self.cube_body_id][2], 3) - .025
+            table_height = np.round(self.table_full_size[2], 3)
+            reward += np.sinh(22 * max(cube_height - table_height, 0))
 
             # reaching reward
             cube_pos = self.sim.data.body_xpos[self.cube_body_id]
