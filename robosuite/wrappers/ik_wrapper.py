@@ -14,7 +14,7 @@ from robosuite.wrappers import Wrapper
 class IKWrapper(Wrapper):
     env = None
 
-    def __init__(self, env, action_repeat=1, markov_obs=True):
+    def __init__(self, env, action_repeat=1, markov_obs=False, finger_obs=False):
         """
         Initializes the inverse kinematics wrapper.
         This wrapper allows for controlling the robot through end effector
@@ -49,6 +49,7 @@ class IKWrapper(Wrapper):
             )
 
         self.markov_obs = markov_obs
+        self.finger_obs = finger_obs
         self.action_repeat = action_repeat
         self.action_spec = self.env.action_spec
         self.init_quat = np.array([-0.02224347, -0.99944383, 0.01488818, -0.01988979])
@@ -75,6 +76,7 @@ class IKWrapper(Wrapper):
             touch_left_finger = 0
             touch_right_finger = 0
 
+        if self.finger_obs:
             for i in range(self.env.sim.data.ncon):
                 c = self.env.sim.data.contact[i]
                 if c.geom1 in self.env.l_finger_geom_ids and c.geom2 == self.env.cube_geom_id:
@@ -139,6 +141,8 @@ class IKWrapper(Wrapper):
             ret[0]['robot-state'] = np.concatenate([ret[0]['robot-state'], self.controller.ik_robot_target_pos])
             touch_left_finger = 0
             touch_right_finger = 0
+
+        if self.finger_obs:
 
             for i in range(self.env.sim.data.ncon):
                 c = self.env.sim.data.contact[i]
