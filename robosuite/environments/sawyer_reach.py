@@ -7,7 +7,7 @@ from robosuite.environments.sawyer import SawyerEnv
 from robosuite.models.arenas import TableArena
 from robosuite.models.objects import BoxObject
 from robosuite.models.robots import Sawyer
-from robosuite.utils.transform_utils import pose2mat, mat2euler
+from robosuite.utils.transform_utils import pose2mat, mat2euler, mat2pose
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 
 
@@ -196,11 +196,13 @@ class SawyerReach(SawyerEnv):
             else:
                 di["image"] = camera_obs
 
-        gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
-        di["gripper_to_cube"] = gripper_site_pos - self.target_pos
+        pose = self.eef_pose()
+        eef_pos, orn = mat2pose(pose)
+
+        di["gripper_to_cube"] = eef_pos - self.target_pos
 
         di["object-state"] = np.concatenate(
-            [gripper_site_pos, self.target_pos, di["gripper_to_cube"]]
+            [eef_pos, self.target_pos, di["gripper_to_cube"]]
         )
 
         return di
@@ -227,7 +229,6 @@ class SawyerReach(SawyerEnv):
         """
         gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
         dist = np.linalg.norm(self.target_pos - gripper_site_pos)
-        print(dist)
         return dist < 0.05
 
     def _gripper_visualization(self):
