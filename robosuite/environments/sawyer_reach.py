@@ -196,7 +196,7 @@ class SawyerReach(SawyerEnv):
             else:
                 di["image"] = camera_obs
 
-        pose = self.eef_pose()
+        pose = self._right_hand_pose
         eef_pos, orn = mat2pose(pose)
 
         di["gripper_to_cube"] = eef_pos - self.target_pos
@@ -229,6 +229,7 @@ class SawyerReach(SawyerEnv):
         """
         gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
         dist = np.linalg.norm(self.target_pos - gripper_site_pos)
+        #print('dist: ', dist)
         return dist < 0.05
 
     def _gripper_visualization(self):

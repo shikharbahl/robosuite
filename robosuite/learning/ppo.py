@@ -41,11 +41,11 @@ def callback(_locals, _globals):
 
 def main():
     num_stack = 1
-    num_env = 8
+    num_env = 1
     render = False
     image_state = False
     subproc = True
-    existing = None
+    existing = '/home/robot/andrewk/robosuite/robosuite/learning/checkpoints/reach/teleop_lstm_objstate_test/best_model.pkl'
     markov_obs = True
     finger_obs = False
     env_type = "SawyerReach"  # "SawyerLift"
@@ -79,7 +79,6 @@ def main():
     if existing:
         print('Loading pkl directly')
         model = PPO2.load(existing)
-        model.set_env(env)
     else:
         try:
             print('Trying existing model...')
@@ -89,17 +88,18 @@ def main():
             print('No existing model found. Training new one.')
             model = PPO2(arch, env, verbose=1, nminibatches=num_env)
 
-    model.learn(total_timesteps=int(1e8), callback=callback)
+    if not existing:
+        model.learn(total_timesteps=int(1e8), callback=callback)
 
-    if render:
-        obs = env.reset()
-        while True:
-            obs = np.tile(obs, (8, 1))
-            action, _states = model.predict(obs)
-            obs, rewards, done, info = env.step(action)
-            env._get_target_envs([0])[0].render()
-            if done[0]:
-                obs = env.reset()
+    #if render:
+    obs = env.reset()
+    while True:
+        obs = np.tile(obs, (8, 1))
+        action, _states = model.predict(obs)
+        obs, rewards, done, info = env.step(action)
+        #env._get_target_envs([0])[0].render()
+        if done[0]:
+            obs = env.reset()
 
 if __name__ == '__main__':
     main()
