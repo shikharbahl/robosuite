@@ -40,8 +40,10 @@ class TeleopWrapper(Wrapper):
         self.controller.reset()
         self.last_t = time.time()
         self.init_rot = self.robot.eef_orientation()
-        return self._get_observation()
-
+        obs = self._get_observation()
+        obs['object-state'] = np.concatenate([obs['object-state'], self.controller.ik_robot_target_pos])
+        return obs
+         
     def sleep(self, time_elapsed=0.):
         time.sleep(max(0, (self.last_t + 1. / self.config.control.rate) - time.time()))
 
@@ -81,6 +83,7 @@ class TeleopWrapper(Wrapper):
         self.last_t = time.time()
 
         obs = self._get_observation()
+        obs['object-state'] = np.concatenate([obs['object-state'], self.controller.ik_robot_target_pos])
         reward = self.reward()
         done = self.env._check_success()
         reward, done, info = self.env._post_action(None)
@@ -90,3 +93,4 @@ class TeleopWrapper(Wrapper):
         if self.config.robot.type == "RealSawyerRobot": 
             self.robot.robot_arm.blocking = True
         return obs, reward, done, info
+

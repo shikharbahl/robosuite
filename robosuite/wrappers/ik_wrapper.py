@@ -72,7 +72,7 @@ class IKWrapper(Wrapper):
     def reset(self):
         ret = super().reset()
         if self.markov_obs:
-            ret['robot-state'] = np.concatenate([ret['robot-state'], self.controller.ik_robot_target_pos])
+            ret['object-state'] = np.concatenate([ret['object-state'], self.controller.ik_robot_target_pos])
             touch_left_finger = 0
             touch_right_finger = 0
 
@@ -88,7 +88,7 @@ class IKWrapper(Wrapper):
                 if c.geom1 == self.env.cube_geom_id and c.geom2 in self.env.r_finger_geom_ids:
                     touch_right_finger = 1
 
-            ret['robot-state'] = np.concatenate([ret['robot-state'], np.array([touch_left_finger, touch_right_finger])])
+            #ret['object-state'] = np.concatenate([ret['object-state'], np.array([touch_left_finger, touch_right_finger])])
  
         self.controller.sync_state()
         return ret
@@ -138,7 +138,7 @@ class IKWrapper(Wrapper):
             
         # This is to append target position into obs space
         if self.markov_obs:
-            ret[0]['robot-state'] = np.concatenate([ret[0]['robot-state'], self.controller.ik_robot_target_pos])
+            ret[0]['object-state'] = np.concatenate([ret[0]['object-state'], self.controller.ik_robot_target_pos])
             touch_left_finger = 0
             touch_right_finger = 0
 

@@ -19,7 +19,7 @@ best_mean_reward, n_steps = -np.inf, 0
 #name = '3stack_cnnlstm'
 #name = 'lstm'
 #name = '4stack_lstm_gripperobs'
-name = 'lstm'
+name = 'teleop_lstm_objstate_test'
 log_dir = "./checkpoints/reach/" + name + '/'
 os.makedirs(log_dir, exist_ok=True)
 
@@ -63,8 +63,8 @@ def main():
 
     env = []
     for i in range(num_env):
-        #ith = GymWrapper(IKWrapper(robosuite.make("SawyerLift", has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview'), markov_obs=markov_obs), num_stack=num_stack, keys=['image'])
-        ith = GymWrapper(IKWrapper(robosuite.make(env_type, has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview'), markov_obs=markov_obs, finger_obs=finger_obs), num_stack=num_stack)
+        #ith = GymWrapper(IKWrapper(robosuite.make(env_type, has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview'), markov_obs=markov_obs), num_stack=num_stack, keys=['object-state'])
+        ith = GymWrapper(TeleopWrapper(robosuite.make(env_type, has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview')), num_stack=num_stack, keys=['object-state'])
         ith.metadata = {'render.modes': ['human']}
         ith.reward_range = None
         ith.spec = None
