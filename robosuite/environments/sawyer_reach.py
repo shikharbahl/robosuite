@@ -38,8 +38,10 @@ class SawyerReach(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        rand_dist = 0
     ):
         """TODO: Add docstring"""
+        self.rand_dist = rand_dist
 
         # settings for table top
         self.table_full_size = table_full_size
@@ -128,9 +130,7 @@ class SawyerReach(SawyerEnv):
         """
         super()._reset_internal()
         self.target_pos = np.array([self.table_full_size[0] / 2 + .28, 0, self.table_full_size[2] + .2])
-        print(self.target_pos)
-        assert False
-        self.target_pos += np.random.uniform(-0.05, 0.05, (3,))
+        self.target_pos += np.random.uniform(-self.rand_dist, self.rand_dist, (3,))
         self.move_indicator(self.target_pos)
 
         # reset joint positions
@@ -164,7 +164,7 @@ class SawyerReach(SawyerEnv):
 
         # use a shaping reward
         if self.reward_shaping:
-            gripper_site_pos = self.sim.data.site_xpos[self.eef_site_id]
+            gripper_site_pos = self._right_hand_pos
             dist = np.linalg.norm(self.target_pos - gripper_site_pos)
             reaching_reward = 1 - np.tanh(10.0 * dist)
             reward += reaching_reward
@@ -197,15 +197,9 @@ class SawyerReach(SawyerEnv):
                 di["image"], di["depth"] = camera_obs
             else:
                 di["image"] = camera_obs
-
-        pose = self._right_hand_pose
-        eef_pos, orn = mat2pose(pose)
-
+        eef_pos = self._right_hand_pos
         di["gripper_to_cube"] = eef_pos - self.target_pos
-
-        di["object-state"] = np.concatenate(
-            [eef_pos, self.target_pos, di["gripper_to_cube"]]
-        )
+        di["object-state"] = np.concatenate([eef_pos, self.target_pos, di["gripper_to_cube"]])
 
         return di
 
@@ -229,10 +223,8 @@ class SawyerReach(SawyerEnv):
         """
         Returns True if task has been completed.
         """
-        pose = self._right_hand_pose
-        eef_pos, orn = mat2pose(pose)
-        gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
-        dist = np.linalg.norm(self.target_pos - eef_pos)
+        gripper_site_pos = self._right_hand_pos
+        dist = np.linalg.norm(self.target_pos - gripper_site_pos)
         return dist < 0.05
 
     def _gripper_visualization(self):

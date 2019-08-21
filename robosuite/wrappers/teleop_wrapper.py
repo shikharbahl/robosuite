@@ -83,7 +83,10 @@ class TeleopWrapper(Wrapper):
         self.last_t = time.time()
 
         obs = self._get_observation()
+        
+        # This is for markovian observations
         obs['object-state'] = np.concatenate([obs['object-state'], self.controller.ik_robot_target_pos])
+
         reward = self.reward()
         done = self.env._check_success()
         reward, done, info = self.env._post_action(None)
