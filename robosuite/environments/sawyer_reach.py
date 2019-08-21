@@ -128,6 +128,8 @@ class SawyerReach(SawyerEnv):
         """
         super()._reset_internal()
         self.target_pos = np.array([self.table_full_size[0] / 2 + .28, 0, self.table_full_size[2] + .2])
+        print(self.target_pos)
+        assert False
         self.target_pos += np.random.uniform(-0.05, 0.05, (3,))
         self.move_indicator(self.target_pos)
 
@@ -227,9 +229,10 @@ class SawyerReach(SawyerEnv):
         """
         Returns True if task has been completed.
         """
+        pose = self._right_hand_pose
+        eef_pos, orn = mat2pose(pose)
         gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
-        dist = np.linalg.norm(self.target_pos - gripper_site_pos)
-        #print('dist: ', dist)
+        dist = np.linalg.norm(self.target_pos - eef_pos)
         return dist < 0.05
 
     def _gripper_visualization(self):

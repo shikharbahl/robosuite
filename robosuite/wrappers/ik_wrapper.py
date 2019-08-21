@@ -130,6 +130,7 @@ class IKWrapper(Wrapper):
         # keep trying to reach the target in a closed-loop
         for i in range(self.action_repeat):
             ret = self.env.step(low_action)
+            print(ret)
             velocities = self.controller.get_control()
             if self.env.mujoco_robot.name == "sawyer":
                 low_action = np.concatenate([velocities, action[7:]])
