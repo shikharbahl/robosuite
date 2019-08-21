@@ -273,10 +273,8 @@ class SawyerEnv(MujocoEnv):
                 [self.sim.data.qvel[x] for x in self._ref_gripper_joint_vel_indexes]
             )
 
-            di["eef_pos"] = np.array(self.sim.data.site_xpos[self.eef_site_id])
-            di["eef_quat"] = T.convert_quat(
-                self.sim.data.get_body_xquat("right_hand"), to="xyzw"
-            )
+            di["eef_pos"] = self._right_hand_pos
+            di["eef_quat"] = self._right_hand_quat
 
             # add in gripper information
             robot_states.extend([di["gripper_qpos"], di["eef_pos"], di["eef_quat"]])
