@@ -195,11 +195,21 @@ class MujocoEnv(metaclass=EnvMeta):
             raise ValueError("executing action in terminated episode")
 
         self.timestep += 1
-        self._pre_action(action)
-        end_time = self.cur_time + self.control_timestep
-        while self.cur_time < end_time:
+
+        policy_step = True
+        for i in range(int(self.control_timestep / self.model_timestep)):
+            self._pre_action(action, policy_step)
             self.sim.step()
-            self.cur_time += self.model_timestep
+            policy_step = False
+        # do this all at once to avoid floating-point inaccuracies
+        self.cur_time += self.control_timestep
+
+        # self._pre_action(action)
+        # end_time = self.cur_time + self.control_timestep
+        # while self.cur_time < end_time:
+        #     self.sim.step()
+        #     self.cur_time += self.model_timestep
+
         reward, done, info = self._post_action(action)
         return self._get_observation(), reward, done, info
 

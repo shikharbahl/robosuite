@@ -651,3 +651,64 @@ def get_pose_error(target_pose, current_pose):
     error[:3] = pos_err
     error[3:] = rot_err
     return error
+
+def euler2mat(euler): #assume xyz
+    euler = np.asarray(euler, dtype=np.float64)
+    assert euler.shape[-1] == 3, "Invalid shaped euler {}".format(euler)
+
+    ai, aj, ak = -euler[..., 2], -euler[..., 1], -euler[..., 0]
+    si, sj, sk = np.sin(ai), np.sin(aj), np.sin(ak)
+    ci, cj, ck = np.cos(ai), np.cos(aj), np.cos(ak)
+    cc, cs = ci * ck, ci * sk
+    sc, ss = si * ck, si * sk
+
+    mat = np.empty(euler.shape[:-1] + (3, 3), dtype=np.float64)
+    mat[..., 2, 2] = cj * ck
+    mat[..., 2, 1] = sj * sc - cs
+    mat[..., 2, 0] = sj * cc + ss
+    mat[..., 1, 2] = cj * sk
+    mat[..., 1, 1] = sj * ss + cc
+    mat[..., 1, 0] = sj * cs - sc
+    mat[..., 0, 2] = -sj
+    mat[..., 0, 1] = cj * si
+    mat[..., 0, 0] = cj * ci
+    return mat
+
+def mat2angle_axis_point(rmat):
+    """Return rotation angle and axis from rotation matrix.
+    >>> angle = (random.random() - 0.5) * (2*math.pi)
+    >>> direc = np.random.random(3) - 0.5
+    >>> point = np.random.random(3) - 0.5
+    >>> R0 = rotation_matrix(angle, direc, point)
+    >>> angle, direc, point = rotation_from_matrix(R0)
+    >>> R1 = rotation_matrix(angle, direc, point)
+    >>> is_same_transform(R0, R1)
+    True
+    """
+    R = np.array(rmat, dtype=np.float64, copy=False)
+    R33 = R[:3, :3]
+    # direction: unit eigenvector of R33 corresponding to eigenvalue of 1
+    w, W = np.linalg.eig(R33.T)
+    i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
+    if not len(i):
+        raise ValueError('no unit eigenvector corresponding to eigenvalue 1')
+    direction = np.real(W[:, i[-1]]).squeeze()
+    # point: unit eigenvector of R33 corresponding to eigenvalue of 1
+    w, Q = np.linalg.eig(R)
+    i = np.where(abs(np.real(w) - 1.0) < 1e-8)[0]
+    if not len(i):
+        raise ValueError('no unit eigenvector corresponding to eigenvalue 1')
+    point = np.real(Q[:, i[-1]]).squeeze()
+    point /= point[3]
+    # rotation angle depending on direction
+    cosa = (np.trace(R33) - 1.0) / 2.0
+    if abs(direction[2]) > 1e-8:
+        sina = (R[1, 0] + (cosa-1.0)*direction[0]*direction[1]) / direction[2]
+    elif abs(direction[1]) > 1e-8:
+        sina = (R[0, 2] + (cosa-1.0)*direction[0]*direction[2]) / direction[1]
+    else:
+        sina = (R[2, 1] + (cosa-1.0)*direction[1]*direction[2]) / direction[0]
+    angle = math.atan2(sina, cosa)
+    return angle, direction, point
+
+
