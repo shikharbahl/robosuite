@@ -5,6 +5,8 @@ import sys
 import os
 import numpy as np
 
+from PIL import Image
+
 import robosuite
 from robosuite.wrappers import TeleopWrapper, GymWrapper, IKWrapper
 
@@ -47,8 +49,9 @@ def main():
     arch = CnnPolicy
     render = False
 
-    existing = None
+    existing = '/home/robot/andrewk/robosuite/robosuite/learning/checkpoints/lift/vannilla_cnn_teleop_wrapper/best_model.pkl'
     #existing = '/home/robot/andrewk/robosuite/robosuite/learning/checkpoints/reach/lstm_fixed_obs_fixed_waypoint/best_model.pkl'
+    #existing = None
     if existing:
         render = True
         num_env = 1
@@ -73,7 +76,9 @@ def main():
         env.append((lambda: ith))
 
     if num_stack:
-        env = VecNormalize(VecFrameStack(SubprocVecEnv(env, 'fork'), num_stack), norm_obs=True, norm_reward=False) if subproc else VecNormalize(VecFrameStack(DummyVecEnv(env), num_stack), norm_obs=True, norm_reward=False)
+        
+        #env = VecNormalize(VecFrameStack(SubprocVecEnv(env, 'fork'), num_stack), norm_obs=True, norm_reward=False) if subproc else VecNormalize(VecFrameStack(DummyVecEnv(env), num_stack), norm_obs=False, norm_reward=False)
+        env = VecFrameStack(SubprocVecEnv(env, 'fork'), num_stack) if subproc else VecFrameStack(DummyVecEnv(env), num_stack)
     else:
         env = SubprocVecEnv(env, 'fork') if subproc else DummyVecEnv(env)
 
@@ -93,9 +98,18 @@ def main():
 
     obs = env.reset()
     while True:
-        obs = np.tile(obs, (8, 1))
+        #obs = np.tile(obs, (8, 1))
+        obsn = obs[0][:, :, 6:9]
+        print(np.mean(obs))
+        print(np.mean(obsn))
+        print(obsn.shape)
+        print(obs.shape)
+        img = Image.fromarray(obsn, 'RGB')
+        img.save('my.png')
         action, _states = model.predict(obs)
         obs, rewards, done, info = env.step(action)
+        assert False
+
         if render:
             env._get_target_envs([0])[0].render()
         if done[0]:
