@@ -39,19 +39,17 @@ def callback(_locals, _globals):
     return True
 
 def main():
-    num_stack = 3
+    num_stack = 1
     num_env = 8
     image_state = True
     subproc = False
     markov_obs = False
     finger_obs = False
     env_type = "SawyerLift" # "SawyerReach"
-    arch = CnnPolicy
+    arch = CnnLstmPolicy
     render = False
 
-    existing = '/home/robot/andrewk/robosuite/robosuite/learning/checkpoints/lift/vannilla_cnn_teleop_wrapper/best_model.pkl'
-    #existing = '/home/robot/andrewk/robosuite/robosuite/learning/checkpoints/reach/lstm_fixed_obs_fixed_waypoint/best_model.pkl'
-    #existing = None
+    existing = '/Users/aqua/Documents/workspace/summer/svl_summer/robosuite/robosuite/learning/checkpoints/lift/vannilla_cnn_teleop_wrapper/best_model.pkl'
     if existing:
         render = True
         num_env = 1
@@ -68,7 +66,7 @@ def main():
 
     env = []
     for i in range(num_env):
-        ith = GymWrapper(TeleopWrapper(robosuite.make(env_type, has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview')), num_stack=num_stack, keys=['image'])
+        ith = GymWrapper(IKWrapper(robosuite.make(env_type, has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview')), num_stack=num_stack, keys=['image'])
         ith.metadata = {'render.modes': ['human']}
         ith.reward_range = None
         ith.spec = None
@@ -76,9 +74,7 @@ def main():
         env.append((lambda: ith))
 
     if num_stack:
-        
-        #env = VecNormalize(VecFrameStack(SubprocVecEnv(env, 'fork'), num_stack), norm_obs=True, norm_reward=False) if subproc else VecNormalize(VecFrameStack(DummyVecEnv(env), num_stack), norm_obs=False, norm_reward=False)
-        env = VecFrameStack(SubprocVecEnv(env, 'fork'), num_stack) if subproc else VecFrameStack(DummyVecEnv(env), num_stack)
+        env = VecFrameStack(VecNormalize(SubprocVecEnv(env, 'fork'), num_stack), norm_obs=True, norm_reward=False) if subproc else VecNormalize(VecFrameStack(DummyVecEnv(env), num_stack), norm_obs=False, norm_reward=False)
     else:
         env = SubprocVecEnv(env, 'fork') if subproc else DummyVecEnv(env)
 
