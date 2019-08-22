@@ -97,7 +97,7 @@ class SawyerReach(SawyerEnv):
         self.mujoco_arena.add_pos_indicator()
 
         # The sawyer robot has a pedestal, we want to align it with the table
-        self.mujoco_arena.set_origin([0.16 + self.table_full_size[0] / 2, 0, 0])
+        self.mujoco_arena.set_origin([self.table_full_size[0] / 2, 0, 0])
 
         self.mujoco_objects = {}
 
@@ -129,12 +129,13 @@ class SawyerReach(SawyerEnv):
         Resets simulation internal configurations.
         """
         super()._reset_internal()
-        self.target_pos = np.array([self.table_full_size[0] / 2 + .28, 0, self.table_full_size[2] + .2])
+        self.target_pos = np.array([self.table_full_size[0] / 2, 0, .05])
         self.target_pos += np.random.uniform(-self.rand_dist, self.rand_dist, (3,))
         self.move_indicator(self.target_pos)
 
         # reset joint positions
-        init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
+        #init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
+        init_pos = np.array([ 0.01617, -1.40923, -0.18743, 2.12647, -0.01288, 0.81582, 1.56892])
         init_pos += np.random.randn(init_pos.shape[0]) * 0.08
         self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
 
@@ -225,6 +226,7 @@ class SawyerReach(SawyerEnv):
         """
         gripper_site_pos = self._right_hand_pos
         dist = np.linalg.norm(self.target_pos - gripper_site_pos)
+        #print('dist: ', dist)
         return dist < 0.05
 
     def _gripper_visualization(self):

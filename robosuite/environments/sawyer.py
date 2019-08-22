@@ -179,9 +179,11 @@ class SawyerEnv(MujocoEnv):
         """
         Sets 3d position of indicator object to @pos.
         """
+        base_pos_in_world = self.sim.data.get_body_xpos("base")
+        
         if self.use_indicator_object:
             index = self._ref_indicator_pos_low
-            self.sim.data.qpos[index : index + 3] = pos
+            self.sim.data.qpos[index : index + 3] = (pos + base_pos_in_world)
 
     def _pre_action(self, action):
         """
