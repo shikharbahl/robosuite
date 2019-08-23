@@ -247,6 +247,8 @@ class SawyerIKController(Controller):
         Returns:
             A list of size @num_joints corresponding to the target joint angles.
         """
+        eef_pos, eef_orn = self.ik_robot_eef_joint_cartesian_pose()
+        dpos = dpos - (self.ik_robot_target_pos - eef_pos)
 
         self.ik_robot_target_pos += dpos * self.user_sensitivity
 
@@ -254,11 +256,11 @@ class SawyerIKController(Controller):
         # from its rest configuration. The corresponding line in most demo
         # scripts is:
         #   `env.set_robot_joint_positions([0, -1.18, 0.00, 2.18, 0.00, 0.57, 1.5708])`
-        rotation = rotation.dot(
-            T.rotation_matrix(angle=-np.pi / 2, direction=[0., 0., 1.], point=None)[
-                :3, :3
-            ]
-        )
+        #rotation = rotation.dot(
+        #    T.rotation_matrix(angle=-np.pi / 2, direction=[0., 0., 1.], point=None)[
+        #        :3, :3
+        #    ]
+        #)
 
         self.ik_robot_target_orn = T.mat2quat(rotation)
 
