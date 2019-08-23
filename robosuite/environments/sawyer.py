@@ -7,174 +7,80 @@ from robosuite.environments import MujocoEnv
 from robosuite.models.grippers import gripper_factory
 from robosuite.models.robots import Sawyer
 
-### TODO: which variables are NEEDED for OSC controller and which are just for data logging? ###
-### TODO: do infos need to get logged in post_action? ###
-### TODO: do we need the "total" variables? ###
+from robosuite.controllers.osc_controller import PositionOrientationController
+
+### TODO: removed inertia + sites under right_hand in robot xml, is that fine? ###
 ### TODO: should I include linear and angular eef velocity in robot state? ###
-### TODO: prev-act, contact-obs ###
-### TODO: do I need the methods under _check_contact? ###
-### TODO: sawyer xml changes... do I need sensors as well? ###
-### TODO: do I need set_joint_damping in sawyer_robot.py? ###
+### TODO: compare pos 300 vs. 100, damping 1, orn 10, damping 1 ###
 
-def configureController(args):
-    # note everything is in world frame! 
-    controller_args = {}
-    controller_args['control_freq'] = args.control_freq
-    controller_args['control_range'] = args.control_range
+def make_controller():
+    return PositionOrientationController(
+        control_range_pos=0.05, # delta pos action range
+        control_range_ori=0.2, # delta orn action range (euler angles)
+        kp_max_abs_delta=10,
+        damping_max_abs_delta=0.1,
+        use_delta_impedance=False, # only for variable impedance
+        initial_impedance_pos=300, #150, # GAINs 
+        initial_impedance_ori=10, #150,
+        initial_damping=1,
+        max_action=1., 
+        min_action=-1.,
+        impedance_flag=False, # not using variable impedance
+        kp_max=300, 
+        kp_min=10, 
+        damping_max=2, 
+        damping_min=0, 
+        initial_joint=None,
+        control_freq=20,
+        position_limits=[[0,0,0],[0,0,0]],
+        orientation_limits=[[0,0,0],[0,0,0]],
+    )
 
-    # add impedance-specific parameters
-    if args.controller not in [ControllerType.JOINT_TORQUE, ControllerType.JOINT_VEL]:
-        controller_args['impedance_flag'] = args.use_impedance
-        controller_args['use_delta_impedance'] = args.use_delta_impedance
-        controller_args['kp_max'] = args.kp_max
-        controller_args['kp_max_abs_delta'] = args.kp_max_abs_delta
-        controller_args['kp_min'] = args.kp_min
-        controller_args['damping_max'] = args.damping_max
-        controller_args['damping_max_abs_delta'] = args.damping_max_abs_delta
-        controller_args['damping_min'] = args.damping_min
-        controller_args['initial_damping'] = args.initial_damping
+    # # note everything is in world frame! 
+    # controller_args = {}
+    # controller_args['control_freq'] = args.control_freq
+    # controller_args['control_range'] = args.control_range
 
-    if args.controller == ControllerType.POS:
-        controller_args['control_range_pos'] = args.control_range_pos
-        controller_args['initial_impedance_pos'] = args.initial_impedance_pos
-        controller_args['initial_impedance_ori'] = args.initial_impedance_ori
-        #controller_args['position_limits'] = args.position_limits
-        return PositionController(**controller_args)
+    # # add impedance-specific parameters
+    # if args.controller not in [ControllerType.JOINT_TORQUE, ControllerType.JOINT_VEL]:
+    #     controller_args['impedance_flag'] = args.use_impedance
+    #     controller_args['use_delta_impedance'] = args.use_delta_impedance
+    #     controller_args['kp_max'] = args.kp_max
+    #     controller_args['kp_max_abs_delta'] = args.kp_max_abs_delta
+    #     controller_args['kp_min'] = args.kp_min
+    #     controller_args['damping_max'] = args.damping_max
+    #     controller_args['damping_max_abs_delta'] = args.damping_max_abs_delta
+    #     controller_args['damping_min'] = args.damping_min
+    #     controller_args['initial_damping'] = args.initial_damping
 
-    if args.controller == ControllerType.POS_ORI:
-        controller_args['control_range_pos'] = args.control_range_pos
-        controller_args['control_range_ori'] = args.control_range_ori
-        controller_args['initial_impedance_pos'] = args.initial_impedance_pos
-        controller_args['initial_impedance_ori'] = args.initial_impedance_ori
-        # TODO are these ever non-zero?
-        #controller_args['position_limits'] = args.position_limits
-        #controller_args['orientation_limits'] = args.orientation_limits
-        return PositionOrientationController(**controller_args)
+    # if args.controller == ControllerType.POS:
+    #     controller_args['control_range_pos'] = args.control_range_pos
+    #     controller_args['initial_impedance_pos'] = args.initial_impedance_pos
+    #     controller_args['initial_impedance_ori'] = args.initial_impedance_ori
+    #     #controller_args['position_limits'] = args.position_limits
+    #     return PositionController(**controller_args)
 
-    if args.controller == ControllerType.JOINT_IMP:
-        return JointImpedanceController(**controller_args)
+    # if args.controller == ControllerType.POS_ORI:
+    #     controller_args['control_range_pos'] = args.control_range_pos
+    #     controller_args['control_range_ori'] = args.control_range_ori
+    #     controller_args['initial_impedance_pos'] = args.initial_impedance_pos
+    #     controller_args['initial_impedance_ori'] = args.initial_impedance_ori
+    #     # TODO are these ever non-zero?
+    #     #controller_args['position_limits'] = args.position_limits
+    #     #controller_args['orientation_limits'] = args.orientation_limits
+    #     return PositionOrientationController(**controller_args)
 
-    if args.controller == ControllerType.JOINT_TORQUE:
-        controller_args['inertia_decoupling'] = args.inertia_decoupling
-        return JointTorqueController(**controller_args)
+    # if args.controller == ControllerType.JOINT_IMP:
+    #     return JointImpedanceController(**controller_args)
 
-    if args.controller == ControllerType.JOINT_VEL:
-        controller_args['kv'] = args.kv
-        return JointVelocityController(**controller_args)
+    # if args.controller == ControllerType.JOINT_TORQUE:
+    #     controller_args['inertia_decoupling'] = args.inertia_decoupling
+    #     return JointTorqueController(**controller_args)
 
-### defaults ###
+    # if args.controller == ControllerType.JOINT_VEL:
+    #     controller_args['kv'] = args.kv
+    #     return JointVelocityController(**controller_args)
 
-# {
-#     "acc_vp_reward_mult": 0.0,
-#     "action_delta_penalty": 0.0,
-#     "additive_action_noise": 0.0,
-#     "alg": "ppo2",
-#     "allow_early_end": false,
-#     "arm_collision_penalty": -20,
-#     "camera_name": "birdview",
-#     "camera_res": 24,
-#     "change_door_friction": false,
-#     "clip_range": 0.2,
-#     "cnn_small": true,
-#     "control_freq": 20,
-#     "control_range_ori": 0.2,
-#     "control_range_pos": 0.05,
-#     "controller": "position",
-#     "damping_max": 2,
-#     "damping_max_abs_delta": 0.1,
-#     "damping_min": 0,
-#     "discount_factor": 0.99,
-#     "dist_threshold": 0.05,
-#     "distance_multiplier": 0.0,
-#     "distance_th_multiplier": 5,
-#     "distance_penalty_weight": 1,
-#     "distance_reward_weight": 30.0,
-#     "door_damping_max": 500,
-#     "door_damping_min": 500,
-#     "door_friction_max": 300,
-#     "door_friction_min": 300,
-#     "draw_line": false,
-#     "ee_accel_penalty": 0,
-#     "end_bonus_multiplier": 25,
-#     "energy_penalty": 0,
-#     "entropy_coef": 0.0,
-#     "excess_force_penalty_mul": 0.01,
-#     "gripper_on_handle": true,
-#     "handle_reward": true,
-#     "horizon": 1024,
-#     "inertia_decoupling": false,
-#     "initial_damping": 1,
-#     "initial_impedance_ori": 150,
-#     "initial_impedance_pos": 150,
-#     "kp_max": 300,
-#     "kp_max_abs_delta": 10,
-#     "kp_min": 10,
-#     "lam": 0.95,
-#     "learning_rate": 0.0003,
-#     "line_width": 0.02,
-#     "max_grad_norm": 0.5,
-#     "max_schedule_ent": 0.0,
-#     "n_epochs_per_update": 6,
-#     "n_units_x": 4,
-#     "n_units_y": 4,
-#     "ncpu": 4,
-#     "network": "mlp",
-#     "nminibatches": 16,
-#     "nsteps": 1024,
-#     "num_already_checked": 0,
-#     "num_hidden": 64,
-#     "num_layers": 2,
-#     "num_sensors": 10,
-#     "num_timesteps": 100000000.0,
-#     "num_via_points": 3,
-#     "obs_stack_size": 1,
-#     "only_cartesian_obs": true,
-#     "peg_size": false,
-#     "plot_deterministic_policy": false,
-#     "point_randomization": 0,
-#     "pressure_threshold_max": 100,
-#     "prob_sensor": 1.0,
-#     "quiet": false,
-#     "random": false,
-#     "random_initialization": true,
-#     "random_point_order": false,
-#     "real_robot": false,
-#     "replay": false,
-#     "reward_scale": 1.0,
-#     "robot": "sawyer",
-#     "seed": 2019,
-#     "shear_threshold": 1,
-#     "stochastic_replay": false,
-#     "table_friction": 0.001,
-#     "table_friction_std": 0,
-#     "table_height": 1.05,
-#     "table_height_std": 0.0,
-#     "table_rot_x": 0.0,
-#     "table_rot_y": 0.0,
-#     "table_size": 0.3,
-#     "task": "WipeForce",
-#     "timestep_penalty": 0.0,
-#     "touch_threshold": 1,
-#     "two_clusters": false,
-#     "unit_wiped_reward": 20,
-#     "use_camera_obs": false,
-#     "use_contact_obs": false,
-#     "use_debug_cube": false,
-#     "use_debug_point": false,
-#     "use_debug_square": true,
-#     "use_delta_distance_reward": false,
-#     "use_delta_impedance": false,
-#     "use_door_state": true,
-#     "use_impedance": false,
-#     "use_object_obs": true,
-#     "use_prev_act_obs": false,
-#     "value_func_coef": 0.5,
-#     "via_point_reward": 100.0,
-#     "visualize": false,
-#     "wipe_contact_reward": 0.5,
-#     "with_pos_limits": false,
-#     "with_qinits": false
-# }
 
 class SawyerEnv(MujocoEnv):
     """Initializes a Sawyer robot environment."""
@@ -246,52 +152,9 @@ class SawyerEnv(MujocoEnv):
         self.gripper_visualization = gripper_visualization
         self.use_indicator_object = use_indicator_object
 
-        self.use_osc_controller = use_osc_controller
+        self.use_osc_controller = True #use_osc_controller
         if self.use_osc_controller:
-            self.goal = np.zeros(3)
-            self.goal_orientation = np.zeros(3)
-            self.desired_force = np.zeros(3)
-            self.desired_torque = np.zeros(3)
-
-            self.ee_force = np.zeros(3)
-            self.ee_force_bias = np.zeros(3)
-            self.contact_threshold = 1    # Maximum contact variation allowed without contact [N]
-
-            self.ee_torque = np.zeros(3)
-            self.ee_torque_bias = np.zeros(3)
-
-            self.controller = controller
-            # TODO - check that these are updated properly
-            self.total_kp = np.zeros(6)
-            self.total_damping = np.zeros(6)
-
-            self.n_avg_ee_acc = 10
-
-            # Current and previous policy step q values, joint torques, ft ee applied and actions
-            self.prev_pstep_ft = np.zeros(6)
-            self.curr_pstep_ft = np.zeros(6)
-            self.prev_pstep_a = np.zeros(self.dof)
-            self.curr_pstep_a = np.zeros(self.dof)
-            self.prev_pstep_q = np.zeros(len(self._ref_joint_vel_indexes))
-            self.curr_pstep_q = np.zeros(len(self._ref_joint_vel_indexes))
-            self.prev_pstep_t = np.zeros(len(self._ref_joint_vel_indexes))
-            self.curr_pstep_t = np.zeros(len(self._ref_joint_vel_indexes))
-            self.prev_pstep_ee_v = np.zeros(6)
-            self.curr_pstep_ee_v = np.zeros(6)
-            self.buffer_pstep_ee_v = deque(np.zeros(6) for _ in range(self.n_avg_ee_acc))
-            self.ee_acc = np.zeros(6)
-
-            self.total_ee_acc = np.zeros(6) # used to compute average
-            self.total_js_energy = np.zeros(len(self._ref_joint_vel_indexes))
-
-            self.torque_total = 0
-            self.joint_torques = 0
-
-            self.prev_ee_pos = np.zeros(7)       
-            self.ee_pos = np.zeros(7)
-
-            ## counting joint limits
-            self.joint_limit_count = 0
+            self.controller = make_controller()
 
         super().__init__(
             has_renderer=has_renderer,
@@ -334,28 +197,6 @@ class SawyerEnv(MujocoEnv):
             self.sim.data.qpos[
                 self._ref_joint_gripper_actuator_indexes
             ] = self.gripper.init_qpos
-
-        if self.use_osc_controller:
-            self.goal = np.zeros(3)
-            self.goal_orientation = np.zeros(3)
-            self.desired_force = np.zeros(3)
-            self.desired_torque = np.zeros(3)
-            self.prev_pstep_q = np.array(self.mujoco_robot.init_qpos)
-            self.curr_pstep_q = np.array(self.mujoco_robot.init_qpos)
-            self.prev_pstep_a = np.zeros(self.dof)
-            self.curr_pstep_a = np.zeros(self.dof)
-            self.prev_pstep_ee_v = np.zeros(6)
-            self.curr_pstep_ee_v = np.zeros(6)
-            self.buffer_pstep_ee_v = deque(np.zeros(6) for _ in range(self.n_avg_ee_acc))
-            self.ee_acc = np.zeros(6)
-            self.total_ee_acc = np.zeros(6) # used to compute average
-            self.total_kp = np.zeros(6)
-            self.total_damping = np.zeros(6)
-            self.total_js_energy = np.zeros(len(self._ref_joint_vel_indexes))
-            self.prev_ee_pos = np.zeros(7)       
-            self.ee_pos = np.zeros(7)
-            self.total_joint_torque = 0
-            self.joint_torques = 0
 
     def _get_reference(self):
         """
@@ -423,7 +264,7 @@ class SawyerEnv(MujocoEnv):
             index = self._ref_indicator_pos_low
             self.sim.data.qpos[index : index + 3] = pos
 
-    def _pre_action(self, action):
+    def _pre_action(self, action, policy_step=None):
         """
         Overrides the superclass method to actuate the robot with the 
         passed joint velocities and gripper control.
@@ -436,113 +277,75 @@ class SawyerEnv(MujocoEnv):
                 actuation controls for the gripper.
         """
 
+        # clip actions into valid range
+        assert len(action) == self.dof, "environment got invalid action dimension"
+        low, high = self.action_spec
+        action = np.clip(action, low, high)
+
         if self.use_osc_controller:
-            action = action.copy()  # ensure that we don't change the action outside of this scope
-            self.controller.update_model(self.sim, id_name='right_hand', joint_index=self._ref_joint_pos_indexes)
-            torques = self.controller.action_to_torques(action, self.policy_step) # this scales and clips the actions correctly
-            self.total_joint_torque += np.sum(abs(torques))
-            self.joint_torques = torques
-
-            self.sim.data.ctrl[:] = self.sim.data.qfrc_bias[self._ref_joint_vel_indexes] + torques
-
-            if self.policy_step:
-                self.prev_pstep_q = np.array(self.curr_pstep_q)
-                self.curr_pstep_q = np.array(self.sim.data.qpos[self._ref_joint_vel_indexes])
-                self.prev_pstep_a = np.array(self.curr_pstep_a)
-                self.curr_pstep_a = np.array(action.copy())
-                self.prev_pstep_t = np.array(self.curr_pstep_t)
-                self.curr_pstep_t = np.array(self.sim.data.ctrl[:])
-                self.prev_pstep_ft = np.array(self.curr_pstep_ft)
-
-                # Assumes a ft sensor on the wrist
-                force_sensor_id = self.sim.model.sensor_name2id("force_ee")
-                force_ee = self.sensor_data[force_sensor_id*3: force_sensor_id*3+3]
-                torque_sensor_id = self.sim.model.sensor_name2id("torque_ee")  
-                torque_ee = self.sensor_data[torque_sensor_id*3: torque_sensor_id*3+3] 
-                self.curr_pstep_ft = np.concatenate([force_ee, torque_ee])
-
-                self.prev_pstep_ee_v = self.curr_pstep_ee_v
-                self.curr_pstep_ee_v = np.concatenate([self.sim.data.body_xvelp[self.sim.model.body_name2id("right_hand")], 
-                    self.sim.data.body_xvelr[self.sim.model.body_name2id("right_hand")]])
-
-                self.buffer_pstep_ee_v.popleft()
-                self.buffer_pstep_ee_v.append(self.curr_pstep_ee_v)
-
-                #convert to matrix
-                buffer_mat = []
-                for v in self.buffer_pstep_ee_v:
-                    buffer_mat += [v]
-                buffer_mat = np.vstack(buffer_mat)
-
-                diffs = np.diff(buffer_mat,axis=0)
-                diffs *= self.control_freq
-                diffs =  np.vstack([self.ee_acc, diffs])
-                diffs.reshape((self.n_avg_ee_acc, 6)) 
-
-                self.ee_acc = np.array([np.convolve(col, np.ones((self.n_avg_ee_acc,))/self.n_avg_ee_acc, mode='valid')[0] for col in diffs.transpose()])
-        else:
-            # clip actions into valid range
-            assert len(action) == self.dof, "environment got invalid action dimension"
-            low, high = self.action_spec
-            action = np.clip(action, low, high)
 
             if self.has_gripper:
-                arm_action = action[: self.mujoco_robot.dof]
-                gripper_action_in = action[
-                    self.mujoco_robot.dof : self.mujoco_robot.dof + self.gripper.dof
-                ]
+                # get rescaled gripper action
+                arm_action = action[:-self.gripper.dof]
+                gripper_action_in = action[-self.gripper.dof:]
                 gripper_action_actual = self.gripper.format_action(gripper_action_in)
-                action = np.concatenate([arm_action, gripper_action_actual])
 
-            # rescale normalized action to control ranges
-            ctrl_range = self.sim.model.actuator_ctrlrange
-            bias = 0.5 * (ctrl_range[:, 1] + ctrl_range[:, 0])
-            weight = 0.5 * (ctrl_range[:, 1] - ctrl_range[:, 0])
-            applied_action = bias + weight * action
-            self.sim.data.ctrl[:] = applied_action
+                # rescale normalized action to control ranges
+                ctrl_range = self.sim.model.actuator_ctrlrange[-self.gripper.dof:]
+                bias = 0.5 * (ctrl_range[:, 1] + ctrl_range[:, 0])
+                weight = 0.5 * (ctrl_range[:, 1] - ctrl_range[:, 0])
+                gripper_action = bias + weight * gripper_action_actual
+            else:
+                arm_action = action
+                gripper_action = []
 
-            # gravity compensation
-            self.sim.data.qfrc_applied[
-                self._ref_joint_vel_indexes
-            ] = self.sim.data.qfrc_bias[self._ref_joint_vel_indexes]
+            # motor torques from controller
+            self.controller.update_model(self.sim, id_name='right_hand', joint_index=self._ref_joint_pos_indexes)
+            torques = self.controller.action_to_torques(arm_action, policy_step) # this scales and clips the actions correctly
+            motor_torque_ctrl = self.sim.data.qfrc_bias[self._ref_joint_vel_indexes] + torques
 
-            if self.use_indicator_object:
+            # apply torques with gripper action
+            total_ctrl = np.concatenate([motor_torque_ctrl, gripper_action])
+            self.sim.data.ctrl[:] = total_ctrl
+
+        else:
+
+            # only apply control when policy gives new input
+            if policy_step:
+
+                if self.has_gripper:
+                    arm_action = action[: self.mujoco_robot.dof]
+                    gripper_action_in = action[
+                        self.mujoco_robot.dof : self.mujoco_robot.dof + self.gripper.dof
+                    ]
+                    gripper_action_actual = self.gripper.format_action(gripper_action_in)
+                    action = np.concatenate([arm_action, gripper_action_actual])
+
+                # rescale normalized action to control ranges
+                ctrl_range = self.sim.model.actuator_ctrlrange
+                bias = 0.5 * (ctrl_range[:, 1] + ctrl_range[:, 0])
+                weight = 0.5 * (ctrl_range[:, 1] - ctrl_range[:, 0])
+                applied_action = bias + weight * action
+                self.sim.data.ctrl[:] = applied_action
+
+                # gravity compensation
                 self.sim.data.qfrc_applied[
-                    self._ref_indicator_vel_low : self._ref_indicator_vel_high
-                ] = self.sim.data.qfrc_bias[
-                    self._ref_indicator_vel_low : self._ref_indicator_vel_high
-                ]
+                    self._ref_joint_vel_indexes
+                ] = self.sim.data.qfrc_bias[self._ref_joint_vel_indexes]
+
+                if self.use_indicator_object:
+                    self.sim.data.qfrc_applied[
+                        self._ref_indicator_vel_low : self._ref_indicator_vel_high
+                    ] = self.sim.data.qfrc_bias[
+                        self._ref_indicator_vel_low : self._ref_indicator_vel_high
+                    ]
 
     def _post_action(self, action):
         """
         (Optional) does gripper visualization after actions.
         """
-
-        self.prev_ee_pos = self.ee_pos
-        self.ee_pos = np.array(self.sim.data.body_xpos[self.sim.model.body_name2id('right_hand')])
-
-        force_sensor_id = self.sim.model.sensor_name2id("force_ee")
-        self.ee_force = np.array(self.sensor_data[force_sensor_id*3: force_sensor_id*3+3])
-
-        if np.linalg.norm(self.ee_force_bias) == 0:
-            self.ee_force_bias = self.ee_force
-
-        torque_sensor_id = self.sim.model.sensor_name2id("torque_ee")  
-        self.ee_torque = np.array(self.sensor_data[torque_sensor_id*3: torque_sensor_id*3+3])      
-
-        if np.linalg.norm(self.ee_torque_bias) == 0:
-            self.ee_torque_bias = self.ee_torque
-
         ret = super()._post_action(action)
-
-        self.total_kp += self.controller.impedance_kp
-        self.total_damping += self.controller.damping
-        self.total_js_energy += self._compute_js_energy()
-        self.total_ee_acc += abs(self.ee_acc)
-        self.torque_total = 0 # reset for next round
-
         self._gripper_visualization()
-
         return ret
 
     def _get_observation(self):
@@ -622,8 +425,9 @@ class SawyerEnv(MujocoEnv):
         Returns the DoF of the robot (with grippers).
         """
         if self.use_osc_controller:
-            return self.controller.action_dim
-        dof = self.mujoco_robot.dof
+            dof = self.controller.action_dim
+        else:
+            dof = self.mujoco_robot.dof
         if self.has_gripper:
             dof += self.gripper.dof
         return dof
@@ -777,60 +581,3 @@ class SawyerEnv(MujocoEnv):
                 self.joint_limit_count+=1
         return joint_limits
 
-    def _compute_q_delta(self):
-        """
-        Returns the change in joint space configuration between previous and current steps
-        """
-        q_delta = self.prev_pstep_q - self.curr_pstep_q
-
-        return q_delta
-
-    def _compute_t_delta(self):
-        """
-        Returns the change in joint space configuration between previous and current steps
-        """
-        t_delta = self.prev_pstep_t - self.curr_pstep_t
-
-        return t_delta
-
-    def _compute_a_delta(self):
-        """
-        Returns the change in policy action between previous and current steps
-        """
-
-        a_delta = self.prev_pstep_a - self.curr_pstep_a
-
-        return a_delta
-
-    def _compute_ft_delta(self):
-        """
-        Returns the change in policy action between previous and current steps
-        """
-
-        ft_delta = self.prev_pstep_ft - self.curr_pstep_ft
-
-        return ft_delta
-
-    def _compute_js_energy(self):
-        """
-        Returns the energy consumed by each joint between previous and current steps
-        """
-        # Mean torque applied
-        mean_t = self.prev_pstep_t - self.curr_pstep_t
-
-        # We assume in the motors torque is proportional to current (and voltage is constant)
-        # In that case the amount of power scales proportional to the torque and the energy is the 
-        # time integral of that
-        js_energy = np.abs((1.0/self.control_freq)*mean_t)
-
-        return js_energy
-
-    def _compute_ee_ft_integral(self):
-        """
-        Returns the integral over time of the applied ee force-torque
-        """
-
-        mean_ft = self.prev_pstep_ft - self.curr_pstep_ft
-        integral_ft = np.abs((1.0/self.control_freq)*mean_ft)
-
-        return integral_ft

@@ -10,17 +10,16 @@ import robosuite.utils.transform_utils as T
 class ControllerType(str, Enum):
     POS = 'position'
     POS_ORI = 'position_orientation'
-    POS_YAW = 'position_yaw'
     JOINT_IMP = 'joint_impedance'
     JOINT_TORQUE = 'joint_torque'
     JOINT_VEL = 'joint_velocity'
 
 
-class Controller():
+class RobotController():
     def __init__(self,
-        control_max,
+        control_max, # actual max control
         control_min,
-        max_action ,
+        max_action , # policy action, 1.
         min_action ,
         control_freq = 20,
         impedance_flag = False,
@@ -250,7 +249,7 @@ class Controller():
         raise NotImplementedError
 
 
-class JointTorqueController(Controller):
+class JointTorqueController(RobotController):
     """
     Class to interprete actions as joint torques
     """
@@ -309,7 +308,7 @@ class JointTorqueController(Controller):
         if self.inertia_decoupling:
             self.update_mass_matrix(sim, joint_index)
 
-class JointVelocityController(Controller):
+class JointVelocityController(RobotController):
     """
     Class to interprete actions as joint velocities
     """
@@ -355,7 +354,7 @@ class JointVelocityController(Controller):
         return torques
 
 
-class JointImpedanceController(Controller):
+class JointImpedanceController(RobotController):
     """
     Class to interprete actions as joint impedance values
     """
@@ -392,8 +391,8 @@ class JointImpedanceController(Controller):
 
         self.interpolate = True
         self.use_delta_impedance = False
-        self.impedance_kp = (np.array(kp_max)-np.array(kp_min))*0.5
-        self.damping = (np.array(damping_max)-np.array(damping_min))*0.5
+        self.impedance_kp = (np.array(kp_max)+np.array(kp_min))*0.5 
+        self.damping = (np.array(damping_max)+np.array(damping_min))*0.5
         self.last_goal_joint = np.zeros(self.control_dim)
 
     def interpolate_joint(self, starting_joint, last_goal_joint, goal_joint, current_vel):
@@ -476,7 +475,7 @@ class JointImpedanceController(Controller):
         # TODO - what is this used for?
         return np.arange(self.control_dim)
 
-class PositionOrientationController(Controller):
+class PositionOrientationController(RobotController):
     """
     Class to interprete actions as cartesian desired position and orientation (and impedance values)
     """

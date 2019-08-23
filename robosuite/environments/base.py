@@ -213,7 +213,7 @@ class MujocoEnv(metaclass=EnvMeta):
         reward, done, info = self._post_action(action)
         return self._get_observation(), reward, done, info
 
-    def _pre_action(self, action):
+    def _pre_action(self, action, policy_step=None):
         """Do any preprocessing before taking an action."""
         self.sim.data.ctrl[:] = action
 
