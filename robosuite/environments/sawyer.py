@@ -9,6 +9,9 @@ from robosuite.models.robots import Sawyer
 
 from robosuite.controllers.osc_controller import PositionOrientationController
 
+### TODO: with stuff commented out, the gripper is floating in mid-air... ###
+### TODO: the orn tilt seems unnatural... ###
+### TODO: control freq of controller should match that of env right? ###
 ### TODO: removed inertia + sites under right_hand in robot xml, is that fine? ###
 ### TODO: should I include linear and angular eef velocity in robot state? ###
 ### TODO: compare pos 300 vs. 100, damping 1, orn 10, damping 1 ###
