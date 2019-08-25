@@ -492,13 +492,14 @@ class PositionOrientationController(RobotController):
                  initial_impedance_pos,
                  initial_impedance_ori,
                  initial_damping,
-                 initial_joint = None,
-                 control_freq = 20,
-                 max_action = 1, 
-                 min_action = -1,
-                 impedance_flag = False,
-                 position_limits = [[0,0,0],[0,0,0]],
-                 orientation_limits = [[0,0,0],[0,0,0]],
+                 initial_joint=None,
+                 control_freq=20,
+                 max_action=1, 
+                 min_action=-1,
+                 impedance_flag=False,
+                 position_limits=[[0,0,0],[0,0,0]],
+                 orientation_limits=[[0,0,0],[0,0,0]],
+                 absolute=False,
                 **kwargs
     ):
         control_max = np.ones(3)*control_range_pos
@@ -515,6 +516,9 @@ class PositionOrientationController(RobotController):
         initial_damping = np.ones(6)*initial_damping
 
         self.use_delta_impedance = use_delta_impedance
+
+        # if True, control absolute position and orientation in world frame
+        self.absolute = absolute
 
         if self.use_delta_impedance:
             # provide range of possible delta impedances
@@ -536,19 +540,19 @@ class PositionOrientationController(RobotController):
             damping_param_min = damping_min
 
         super(PositionOrientationController, self).__init__(
-            control_max = control_max, 
-            control_min = control_min, 
-            max_action = max_action, 
-            min_action = min_action,
-            impedance_flag = impedance_flag,
-            kp_max = kp_param_max, 
-            kp_min = kp_param_min, 
-            damping_max = damping_param_max, 
-            damping_min = damping_param_min, 
-            initial_joint = initial_joint,
-            control_freq = control_freq,
-            position_limits = position_limits,
-            orientation_limits=orientation_limits
+            control_max=control_max, 
+            control_min=control_min, 
+            max_action=max_action, 
+            min_action=min_action,
+            impedance_flag=impedance_flag,
+            kp_max=kp_param_max, 
+            kp_min=kp_param_min, 
+            damping_max=damping_param_max, 
+            damping_min=damping_param_min, 
+            initial_joint=initial_joint,
+            control_freq=control_freq,
+            position_limits=position_limits,
+            orientation_limits=orientation_limits,
             )
 
         self.impedance_kp = np.array(initial_impedance).astype('float64')
@@ -597,7 +601,9 @@ class PositionOrientationController(RobotController):
         Given the next action, output joint torques for the robot. 
         Assumes the robot's model is updated.
         """
-        action = self.transform_action(action)
+        if not self.absolute:
+            # clip and transform action if using delta pos / orn actions
+            action = self.transform_action(action)
 
         # This is computed only when we receive a new desired goal from policy
         if policy_step == True:
@@ -704,6 +710,8 @@ class PositionOrientationController(RobotController):
     def set_goal_position(self, action, position=None):
         if position is not None:
             self._goal_position = position
+        elif self.absolute:
+            self._goal_position = np.array(action[:3])
         else:
             self._goal_position = self.current_position + action[0:3]
             if np.array(self.position_limits).any():
@@ -711,8 +719,10 @@ class PositionOrientationController(RobotController):
                     self._goal_position[idx] = np.clip(self._goal_position[idx], self.position_limits[0][idx], self.position_limits[1][idx])
 
     def set_goal_orientation(self, action, orientation=None):
-        if orientation is not  None:
+        if orientation is not None:
             self._goal_orientation = orientation
+        elif self.absolute:
+            self._goal_orientation = T.euler2mat(action[3:6])
         else:
             rotation_mat_error = T.euler2mat(-action[3:6])
             self._goal_orientation = np.dot((rotation_mat_error).T, self.current_orientation_mat)

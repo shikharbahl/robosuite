@@ -7,16 +7,19 @@ from robosuite.environments import MujocoEnv
 from robosuite.models.grippers import gripper_factory
 from robosuite.models.robots import Sawyer
 
-from robosuite.controllers.osc_controller import PositionOrientationController
+from robosuite.controllers.osc_controller import PositionOrientationController, PositionController
+
+### Had to change position of eef back to robosuite default, and comment out inertia. ###
+
+### TODO: try only changing actuator type in original sawyer xml and using that for OSC ###
 
 ### TODO: with stuff commented out, the gripper is floating in mid-air... ###
 ### TODO: the orn tilt seems unnatural... ###
 ### TODO: control freq of controller should match that of env right? ###
-### TODO: removed inertia + sites under right_hand in robot xml, is that fine? ###
 ### TODO: should I include linear and angular eef velocity in robot state? ###
-### TODO: compare pos 300 vs. 100, damping 1, orn 10, damping 1 ###
 
-def make_controller():
+def make_controller(absolute=False, control_freq=20):
+    # return PositionController(
     return PositionOrientationController(
         control_range_pos=0.05, # delta pos action range
         control_range_ori=0.2, # delta orn action range (euler angles)
@@ -24,7 +27,7 @@ def make_controller():
         damping_max_abs_delta=0.1,
         use_delta_impedance=False, # only for variable impedance
         initial_impedance_pos=300, #150, # GAINs 
-        initial_impedance_ori=10, #150,
+        initial_impedance_ori=300, #150,
         initial_damping=1,
         max_action=1., 
         min_action=-1.,
@@ -34,9 +37,10 @@ def make_controller():
         damping_max=2, 
         damping_min=0, 
         initial_joint=None,
-        control_freq=20,
+        control_freq=control_freq,
         position_limits=[[0,0,0],[0,0,0]],
         orientation_limits=[[0,0,0],[0,0,0]],
+        absolute=absolute,
     )
 
     # # note everything is in world frame! 
@@ -106,6 +110,7 @@ class SawyerEnv(MujocoEnv):
         camera_width=256,
         camera_depth=False,
         use_osc_controller=False,
+        absolute_control=False,
     ):
         """
         Args:
@@ -155,9 +160,10 @@ class SawyerEnv(MujocoEnv):
         self.gripper_visualization = gripper_visualization
         self.use_indicator_object = use_indicator_object
 
-        self.use_osc_controller = True #use_osc_controller
+        self.use_osc_controller = use_osc_controller
         if self.use_osc_controller:
-            self.controller = make_controller()
+            self.absolute_control = absolute_control
+            self.controller = make_controller(absolute=self.absolute_control, control_freq=control_freq)
 
         super().__init__(
             has_renderer=has_renderer,
@@ -282,8 +288,10 @@ class SawyerEnv(MujocoEnv):
 
         # clip actions into valid range
         assert len(action) == self.dof, "environment got invalid action dimension"
-        low, high = self.action_spec
-        action = np.clip(action, low, high)
+
+        if (not self.use_osc_controller) or (not self.absolute_control):
+            low, high = self.action_spec
+            action = np.clip(action, low, high)
 
         if self.use_osc_controller:
 
@@ -396,13 +404,6 @@ class SawyerEnv(MujocoEnv):
             # robot_states.extend([di["gripper_qpos"], di["eef_pos"], di["eef_quat"], di["eef_vlin"], di["eef_vang"]])
 
         di["robot-state"] = np.concatenate(robot_states)
-
-        # di["prev-act"] = self.prev_pstep_a
-
-        # # Adding binary contact observation
-        # in_contact = np.linalg.norm(self.ee_force - self.ee_force_bias) > self.contact_threshold
-        # di["contact-obs"] = in_contact
-
         return di
 
     @property

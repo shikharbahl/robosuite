@@ -37,6 +37,8 @@ class SawyerLift(SawyerEnv):
         camera_height=256,
         camera_width=256,
         camera_depth=False,
+        use_osc_controller=False,
+        absolute_control=False,
     ):
         """
         Args:
@@ -133,6 +135,8 @@ class SawyerLift(SawyerEnv):
             camera_height=camera_height,
             camera_width=camera_width,
             camera_depth=camera_depth,
+            use_osc_controller=use_osc_controller,
+            absolute_control=absolute_control,
         )
 
     def _load_model(self):

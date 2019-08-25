@@ -652,27 +652,66 @@ def get_pose_error(target_pose, current_pose):
     error[3:] = rot_err
     return error
 
-def euler2mat(euler): #assume xyz
-    euler = np.asarray(euler, dtype=np.float64)
-    assert euler.shape[-1] == 3, "Invalid shaped euler {}".format(euler)
+def euler2mat(euler, axes='sxyz'):
+    """Return homogeneous rotation matrix from Euler angles and axis sequence.
+    ai, aj, ak : Euler's roll, pitch and yaw angles
+    axes : One of 24 axis sequences as string or encoded tuple
+    >>> R = euler_matrix(1, 2, 3, 'syxz')
+    >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)
+    True
+    >>> R = euler_matrix(1, 2, 3, (0, 1, 0, 1))
+    >>> numpy.allclose(numpy.sum(R[0]), -0.383436184)
+    True
+    >>> ai, aj, ak = (4.0*math.pi) * (numpy.random.random(3) - 0.5)
+    >>> for axes in _AXES2TUPLE.keys():
+    ...    R = euler_matrix(ai, aj, ak, axes)
+    >>> for axes in _TUPLE2AXES.keys():
+    ...    R = euler_matrix(ai, aj, ak, axes)
+    """
+    ai, aj, ak = euler[0], euler[1], euler[2]
 
-    ai, aj, ak = -euler[..., 2], -euler[..., 1], -euler[..., 0]
-    si, sj, sk = np.sin(ai), np.sin(aj), np.sin(ak)
-    ci, cj, ck = np.cos(ai), np.cos(aj), np.cos(ak)
-    cc, cs = ci * ck, ci * sk
-    sc, ss = si * ck, si * sk
+    try:
+        firstaxis, parity, repetition, frame = _AXES2TUPLE[axes]
+    except (AttributeError, KeyError):
+        _ = _TUPLE2AXES[axes]
+        firstaxis, parity, repetition, frame = axes
 
-    mat = np.empty(euler.shape[:-1] + (3, 3), dtype=np.float64)
-    mat[..., 2, 2] = cj * ck
-    mat[..., 2, 1] = sj * sc - cs
-    mat[..., 2, 0] = sj * cc + ss
-    mat[..., 1, 2] = cj * sk
-    mat[..., 1, 1] = sj * ss + cc
-    mat[..., 1, 0] = sj * cs - sc
-    mat[..., 0, 2] = -sj
-    mat[..., 0, 1] = cj * si
-    mat[..., 0, 0] = cj * ci
-    return mat
+    i = firstaxis
+    j = _NEXT_AXIS[i+parity]
+    k = _NEXT_AXIS[i-parity+1]
+
+    if frame:
+        ai, ak = ak, ai
+    if parity:
+        ai, aj, ak = -ai, -aj, -ak
+
+    si, sj, sk = math.sin(ai), math.sin(aj), math.sin(ak)
+    ci, cj, ck = math.cos(ai), math.cos(aj), math.cos(ak)
+    cc, cs = ci*ck, ci*sk
+    sc, ss = si*ck, si*sk
+
+    M = np.identity(4)
+    if repetition:
+        M[i, i] = cj
+        M[i, j] = sj*si
+        M[i, k] = sj*ci
+        M[j, i] = sj*sk
+        M[j, j] = -cj*ss+cc
+        M[j, k] = -cj*cs-sc
+        M[k, i] = -sj*ck
+        M[k, j] = cj*sc+cs
+        M[k, k] = cj*cc-ss
+    else:
+        M[i, i] = cj*ck
+        M[i, j] = sj*sc-cs
+        M[i, k] = sj*cc+ss
+        M[j, i] = cj*sk
+        M[j, j] = sj*ss+cc
+        M[j, k] = sj*cs-sc
+        M[k, i] = -sj
+        M[k, j] = cj*si
+        M[k, k] = cj*ci
+    return M[:3, :3]
 
 def mat2angle_axis_point(rmat):
     """Return rotation angle and axis from rotation matrix.
