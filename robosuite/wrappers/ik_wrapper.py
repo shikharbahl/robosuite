@@ -111,7 +111,7 @@ class IKWrapper(Wrapper):
                 inputs (first right, then left).
         """
         # Make change in orientation none
-        action = np.hstack([action[:3], np.array([0, 0, 0, 1]), action[3]])
+        action = np.hstack([action[:3], np.array([0, 0, 0, 1]), 1])
 
         input_1 = self._make_input(action[:7], self.init_quat)
         if self.env.mujoco_robot.name == "sawyer":
@@ -176,5 +176,5 @@ class IKWrapper(Wrapper):
         """
         Returns size of (x, y, z) delta + gripper
         """
-        return 4
+        return 3
 
