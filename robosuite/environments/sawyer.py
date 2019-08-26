@@ -160,7 +160,7 @@ class SawyerEnv(MujocoEnv):
         self.gripper_visualization = gripper_visualization
         self.use_indicator_object = use_indicator_object
 
-        if self.use_osc_controller:
+        if use_osc_controller:
             self.absolute_control = absolute_control
             self.controller = make_controller(absolute=self.absolute_control, control_freq=control_freq)
 
