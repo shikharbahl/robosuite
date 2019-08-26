@@ -6,10 +6,12 @@ from robosuite.utils.mjcf_utils import xml_path_completion, array_to_string
 class Sawyer(Robot):
     """Sawyer is a witty single-arm robot designed by Rethink Robotics."""
 
-    def __init__(self):
+    def __init__(self, use_osc=False):
         # super().__init__(xml_path_completion("robots/sawyer/robot.xml"))
-        super().__init__(xml_path_completion("robots/sawyer/robot_osc.xml"))
-
+        if use_osc:
+            super().__init__(xml_path_completion("robots/sawyer/robot_osc.xml"))
+        else:
+            super().__init__(xml_path_completion("robots/sawyer/robot.xml"))
         self.bottom_offset = np.array([0, 0, -0.913])
 
     def set_base_xpos(self, pos):
