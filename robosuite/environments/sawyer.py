@@ -160,6 +160,10 @@ class SawyerEnv(MujocoEnv):
         self.gripper_visualization = gripper_visualization
         self.use_indicator_object = use_indicator_object
 
+        if self.use_osc_controller:
+            self.absolute_control = absolute_control
+            self.controller = make_controller(absolute=self.absolute_control, control_freq=control_freq)
+
         super().__init__(
             has_renderer=has_renderer,
             has_offscreen_renderer=has_offscreen_renderer,
@@ -175,10 +179,6 @@ class SawyerEnv(MujocoEnv):
             camera_depth=camera_depth,
             use_osc_controller=use_osc_controller,
         )
-
-        if self.use_osc_controller:
-            self.absolute_control = absolute_control
-            self.controller = make_controller(absolute=self.absolute_control, control_freq=control_freq)
 
     def _load_model(self):
         """
