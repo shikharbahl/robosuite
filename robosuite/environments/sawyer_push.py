@@ -185,7 +185,7 @@ class SawyerPush(SawyerEnv):
 
             # pushing reward
             dist = np.linalg.norm(self.target_pos - cube_pos)
-            pushing_reward = 1 - np.tanh(10.0 * dist)
+            pushing_reward = 1 - np.tanh(25.0 * dist)
             reward += pushing_reward
 
         return reward
