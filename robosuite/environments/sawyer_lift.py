@@ -114,7 +114,7 @@ class SawyerLift(SawyerEnv):
                 x_range=[-0.03, 0.03],
                 y_range=[-0.03, 0.03],
                 ensure_object_boundary_in_range=False,
-                z_rotation=None,
+                z_rotation=True,
             )
 
         super().__init__(
@@ -227,9 +227,9 @@ class SawyerLift(SawyerEnv):
 
         # use a shaping reward
         if self.reward_shaping:
-            cube_height = np.round(self.sim.data.body_xpos[self.cube_body_id][2], 3) - .025
-            table_height = np.round(self.table_full_size[2], 3)
-            reward += np.sinh(22 * max(cube_height - table_height, 0))
+            # cube_height = np.round(self.sim.data.body_xpos[self.cube_body_id][2], 3) - .025
+            # table_height = np.round(self.table_full_size[2], 3)
+            # reward += np.sinh(22 * max(cube_height - table_height, 0))
 
             # reaching reward
             cube_pos = self.sim.data.body_xpos[self.cube_body_id]

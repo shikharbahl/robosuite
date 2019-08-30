@@ -115,8 +115,6 @@ class SawyerEnv(MujocoEnv):
                 self._ref_joint_gripper_actuator_indexes
             ] = self.gripper.init_qpos
 
-        self.gripper.hide_visualization()
-
     def _get_reference(self):
         """
         Sets up necessary reference for robots, grippers, and objects.
@@ -199,8 +197,6 @@ class SawyerEnv(MujocoEnv):
         """
 
         # clip actions into valid range
-        # TODO: idk if this hide is needed for collected image states
-        #self.gripper.hide_visualization()
         assert len(action) == self.dof, "environment got invalid action dimension"
         low, high = self.action_spec
         action = np.clip(action, low, high)
@@ -209,6 +205,7 @@ class SawyerEnv(MujocoEnv):
             gripper_action_in = action[
                 self.mujoco_robot.dof : self.mujoco_robot.dof + self.gripper.dof
             ]
+
             if gripper_action_in > 0:
                 gripper_action_in = [1]
             else:

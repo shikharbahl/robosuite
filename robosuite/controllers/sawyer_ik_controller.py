@@ -248,10 +248,10 @@ class SawyerIKController(Controller):
         Returns:
             A list of size @num_joints corresponding to the target joint angles.
         """
-        eef_pos, eef_orn = self.ik_robot_eef_joint_cartesian_pose()
+        #eef_pos, eef_orn = self.ik_robot_eef_joint_cartesian_pose()
         #dpos = dpos - (self.ik_robot_target_pos - eef_pos)
-        #self.ik_robot_target_pos += dpos * self.user_sensitivity
-        self.ik_robot_target_pos = eef_pos + dpos
+        self.ik_robot_target_pos += dpos * self.user_sensitivity
+        #self.ik_robot_target_pos = eef_pos + dpos
 
         # this rotation accounts for rotating the end effector by 90 degrees
         # from its rest configuration. The corresponding line in most demo
