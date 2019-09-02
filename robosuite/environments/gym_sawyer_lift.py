@@ -45,6 +45,14 @@ class GymSawyerLift(SawyerEnv):
                 markov_obs=False,
                 finger_obs=False
                 ):
+        
+        #has_renderer=render
+        #has_offscreen_renderer=image_state
+        #use_camera_obs=image_state
+        #reward_shaping=True
+        #camera_name='agentview'
+        #camera_height=84
+        #camera_width=84
 
         self.env = SawyerLift(
             gripper_type=gripper_type,
@@ -62,15 +70,28 @@ class GymSawyerLift(SawyerEnv):
             camera_height=camera_height,
             camera_width=camera_width,
             camera_depth=camera_depth,
+            reward_shaping=reward_shaping,
         )
 
-        self.env = GymWrapper(IKWrapper(self.env, markov_obs=markov_obs, finger_obs=finger_obs), keys=keys)
+        self.env = IKWrapper(self.env, markov_obs=markov_obs, finger_obs=finger_obs)
+        #self.action_space = self.env.action_space
+        #self.observation_space = self.env.observation_space
+        #self.keys = self.env.keys
 
     def _load_model(self):
         """
         Loads an xml model, puts it in self.model
         """
         return self.env._load_model()
+
+    def _flatten_obs(self, obs_dict, verbose=False):
+        """
+        Filters keys of interest out and concatenate the information.
+
+        Args:
+            obs_dict: ordered dictionary of observations
+        """
+        return self.env._flatten_obs(obs_dict, verbose=verbose)
         
     def _get_reference(self):
         """
@@ -130,6 +151,9 @@ class GymSawyerLift(SawyerEnv):
 
     def action_spec(self):
         return self.env.action_spec()
+
+    def get_observation(self):
+        return self.env.get_observation()
 
     @property
     def dof(self):

@@ -21,7 +21,7 @@ from stable_baselines.bench import Monitor
 
 best_mean_reward, n_steps = -np.inf, 0
 
-name = 'ppo_tensorboard'
+name = 'test_works'
 log_dir = "./learning/checkpoints/lift/" + name + '/'
 os.makedirs(log_dir, exist_ok=True)
 
@@ -43,14 +43,14 @@ def callback(_locals, _globals):
     return True
 
 def main():
-    num_stack = 1
-    num_env = 32
+    num_stack = None
+    num_env = 1
     image_state = True
     subproc = False
     markov_obs = False
     finger_obs = False
-    env_type = "SawyerLift" # "SawyerReach"
-    arch = CnnLstmPolicy
+    env_type = "GymSawyerLift" # "SawyerReach"
+    arch = MlpLstmPolicy
     render = False
 
     #existing = '/Users/aqua/Documents/workspace/summer/svl_summer/robosuite/robosuite/learning/checkpoints/lift/vannilla_cnn_teleop_wrapper/best_model.pkl'
@@ -72,7 +72,7 @@ def main():
     global env
     env = []
     for i in range(num_env):
-        ith = GymWrapper(IKWrapper(robosuite.make(env_type, has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview', camera_height=84, camera_width=84)), num_stack=num_stack, keys=['image'])
+        ith = robosuite.make(env_type, has_renderer=render, has_offscreen_renderer=image_state, use_camera_obs=image_state, reward_shaping=True, camera_name='agentview', camera_height=84, camera_width=84, keys=['object-state'])
         ith.metadata = {'render.modes': ['human']}
         ith.reward_range = None
         ith.spec = None

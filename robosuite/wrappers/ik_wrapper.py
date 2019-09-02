@@ -88,7 +88,7 @@ class IKWrapper(Wrapper):
                 if c.geom1 == self.env.cube_geom_id and c.geom2 in self.env.r_finger_geom_ids:
                     touch_right_finger = 1
 
-            #ret['object-state'] = np.concatenate([ret['object-state'], np.array([touch_left_finger, touch_right_finger])])
+            ret['object-state'] = np.concatenate([ret['object-state'], np.array([touch_left_finger, touch_right_finger])])
  
         self.controller.sync_state()
         return ret
@@ -111,9 +111,9 @@ class IKWrapper(Wrapper):
                 inputs (first right, then left).
         """
         # Make change in orientation none
-        action = np.hstack([action[:3], np.array([0, 0, 0, 1]), action[3]])
+        #action = np.hstack([action[:3], np.array([0, 0, 0, 1]), action[3]])
 
-        input_1 = self._make_input(action[:7], self.init_quat)
+        input_1 = self._make_input(action[:7], self.env._right_hand_quat)
         if self.env.mujoco_robot.name == "sawyer":
             velocities = self.controller.get_control(**input_1)
             low_action = np.concatenate([velocities, action[7:]])
@@ -164,11 +164,12 @@ class IKWrapper(Wrapper):
         array. The first three elements are taken to be displacement in position, and a
         quaternion indicating the change in rotation with respect to @old_quat.
         """
-        action = np.hstack([action[:3], [0, 0, 0, 1], action[3]])
+        #action = np.hstack([action[:3], [0, 0, 0, 1], action[3]])
         return {
             "dpos": action[:3],
             # IK controller takes an absolute orientation in robot base frame
-            "rotation": T.quat2mat(old_quat),
+            #"rotation": T.quat2mat(old_quat),
+            "rotation": T.quat2mat(T.quat_multiply(old_quat, action[3:7])),
         }
 
     @property
@@ -176,5 +177,6 @@ class IKWrapper(Wrapper):
         """
         Returns size of (x, y, z) delta + gripper
         """
-        return 3
+        print('called dof')
+        return 8
 

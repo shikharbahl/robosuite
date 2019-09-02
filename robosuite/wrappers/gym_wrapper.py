@@ -31,15 +31,16 @@ class GymWrapper(Wrapper):
 
         # set up observation and action spaces
         flat_ob = self._flatten_obs(self.env.reset(), verbose=True)
-        self.obs_dim = flat_ob.shape
+        #self.obs_dim = flat_ob.shape
+        self.obs_dim = flat_ob.size
         high = np.inf * np.ones(self.obs_dim)
         low = -high
         self.observation_space = spaces.Box(low=low, high=high)
         low, high = self.env.action_spec
 
         # This simulates max dpos
-        low = np.array([-.05] * 4)
-        high = np.array([.05] * 4)
+        #low = np.array([-.05] * 4)
+        #high = np.array([.05] * 4)
         self.action_space = spaces.Box(low=low, high=high)
 
     def _flatten_obs(self, obs_dict, verbose=False):
