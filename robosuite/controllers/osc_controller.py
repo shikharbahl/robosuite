@@ -85,6 +85,8 @@ class RobotController():
         """
         Updates the state of the robot used to compute the control command
         """
+        pos_joint_index, vel_joint_index = joint_index
+
         self.model_timestep = sim.model.opt.timestep
         self.interpolation_steps = np.floor((1.0/(self.model_timestep)/self.control_freq)*self.ramp_ratio)
         self.current_position = sim.data.body_xpos[sim.model.body_name2id(id_name)]
@@ -92,11 +94,11 @@ class RobotController():
         self.current_lin_velocity = sim.data.body_xvelp[sim.model.body_name2id(id_name)]
         self.current_ang_velocity = sim.data.body_xvelr[sim.model.body_name2id(id_name)]
 
-        self.current_joint_position = sim.data.qpos[joint_index]
-        self.current_joint_velocity = sim.data.qvel[joint_index]
+        self.current_joint_position = sim.data.qpos[pos_joint_index]
+        self.current_joint_velocity = sim.data.qvel[vel_joint_index]
 
-        self.Jx= sim.data.get_body_jacp(id_name).reshape((3, -1))[:, joint_index]
-        self.Jr= sim.data.get_body_jacr(id_name).reshape((3, -1))[:, joint_index]
+        self.Jx = sim.data.get_body_jacp(id_name).reshape((3, -1))[:, vel_joint_index]
+        self.Jr = sim.data.get_body_jacr(id_name).reshape((3, -1))[:, vel_joint_index]
         self.J_full = np.vstack([self.Jx, self.Jr])
 
     def update_mass_matrix(self, sim, joint_index):
@@ -105,12 +107,16 @@ class RobotController():
         sim - Mujoco simulation object
         joint_index - list of joint position indices in Mujoco
         """
+        pos_joint_index, vel_joint_index = joint_index
+
         mass_matrix =  np.ndarray(shape=(len(sim.data.qvel)**2,),dtype=np.float64, order='C')
         mujoco_py.cymj._mj_fullM(sim.model, mass_matrix, sim.data.qM)
         mass_matrix = np.reshape(mass_matrix, (len(sim.data.qvel),len(sim.data.qvel)))    
-        self.mass_matrix = mass_matrix[joint_index,:][:,joint_index]
+        self.mass_matrix = mass_matrix[vel_joint_index,:][:,vel_joint_index]
 
     def update_model_opspace(self,sim, joint_index):
+        pos_joint_index, vel_joint_index = joint_index
+
         mass_matrix_inv = scipy.linalg.inv(self.mass_matrix)
 
         # J M^-1 J^T
@@ -146,7 +152,7 @@ class RobotController():
 
         if self.initial_joint is not None:
             Jbar= np.dot(mass_matrix_inv, self.J_full.transpose()).dot(self.lambda_matrix)
-            self.nullspace_matrix = np.eye(len(joint_index), len(joint_index)) - np.dot(Jbar, self.J_full)
+            self.nullspace_matrix = np.eye(len(vel_joint_index), len(vel_joint_index)) - np.dot(Jbar, self.J_full)
 
 
     def set_goal_impedance(self, action):

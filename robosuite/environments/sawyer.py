@@ -18,8 +18,30 @@ from robosuite.controllers.osc_controller import PositionOrientationController, 
 ### TODO: control freq of controller should match that of env right? ###
 ### TODO: should I include linear and angular eef velocity in robot state? ###
 
-def make_controller(absolute=False, control_freq=20):
+def make_controller(absolute=False, control_freq=20, position_only=False):
     # return PositionController(
+    if position_only:
+        return PositionController(
+            control_range_pos=0.05, # delta pos action range
+            kp_max_abs_delta=10,
+            damping_max_abs_delta=0.1,
+            use_delta_impedance=False, # only for variable impedance
+            initial_impedance_pos=300, #150, # GAINs 
+            initial_impedance_ori=300, #150,
+            initial_damping=1,
+            max_action=1., 
+            min_action=-1.,
+            impedance_flag=False, # not using variable impedance
+            kp_max=300, 
+            kp_min=10, 
+            damping_max=2, 
+            damping_min=0, 
+            initial_joint=None,
+            control_freq=control_freq,
+            position_limits=[[0,0,0],[0,0,0]],
+            orientation_limits=[[0,0,0],[0,0,0]],
+            absolute=absolute,
+        )
     return PositionOrientationController(
         control_range_pos=0.05, # delta pos action range
         control_range_ori=0.2, # delta orn action range (euler angles)
@@ -111,6 +133,9 @@ class SawyerEnv(MujocoEnv):
         camera_depth=False,
         use_osc_controller=False,
         absolute_control=False,
+        osc_position_only=False,
+        collect_osc_data=False,
+        osc_raw_torques=False,
     ):
         """
         Args:
@@ -162,7 +187,10 @@ class SawyerEnv(MujocoEnv):
 
         if use_osc_controller:
             self.absolute_control = absolute_control
-            self.controller = make_controller(absolute=self.absolute_control, control_freq=control_freq)
+            self.osc_position_only = osc_position_only
+            self.osc_raw_torques = osc_raw_torques
+            if not osc_raw_torques:
+                self.controller = make_controller(absolute=self.absolute_control, control_freq=control_freq, position_only=osc_position_only)
 
         super().__init__(
             has_renderer=has_renderer,
@@ -178,6 +206,7 @@ class SawyerEnv(MujocoEnv):
             camera_width=camera_height,
             camera_depth=camera_depth,
             use_osc_controller=use_osc_controller,
+            collect_osc_data=collect_osc_data,
         )
 
     def _load_model(self):
@@ -193,7 +222,7 @@ class SawyerEnv(MujocoEnv):
                 self.gripper.hide_visualization()
             self.mujoco_robot.add_gripper("right_hand", self.gripper)
 
-        if self.use_osc_controller:
+        if self.use_osc_controller and not self.osc_raw_torques:
             self.controller.initial_joint = self.mujoco_robot.init_qpos
 
     def _reset_internal(self):
@@ -290,7 +319,7 @@ class SawyerEnv(MujocoEnv):
         # clip actions into valid range
         assert len(action) == self.dof, "environment got invalid action dimension"
 
-        if (not self.use_osc_controller) or (not self.absolute_control):
+        if (not self.use_osc_controller) or ((not self.absolute_control) and (not self.osc_raw_torques)):
             low, high = self.action_spec
             action = np.clip(action, low, high)
 
@@ -311,10 +340,13 @@ class SawyerEnv(MujocoEnv):
                 arm_action = action
                 gripper_action = []
 
-            # motor torques from controller
-            self.controller.update_model(self.sim, id_name='right_hand', joint_index=self._ref_joint_pos_indexes)
-            torques = self.controller.action_to_torques(arm_action, policy_step) # this scales and clips the actions correctly
-            motor_torque_ctrl = self.sim.data.qfrc_bias[self._ref_joint_vel_indexes] + torques
+            if self.osc_raw_torques:
+                self.torques = np.array(arm_action)
+            else:
+                # motor torques from controller
+                self.controller.update_model(self.sim, id_name='right_hand', joint_index=(self._ref_joint_pos_indexes, self._ref_joint_vel_indexes))
+                self.torques = self.controller.action_to_torques(arm_action, policy_step) # this scales and clips the actions correctly
+            motor_torque_ctrl = self.sim.data.qfrc_bias[self._ref_joint_vel_indexes] + self.torques
 
             # apply torques with gripper action
             total_ctrl = np.concatenate([motor_torque_ctrl, gripper_action])
@@ -429,7 +461,7 @@ class SawyerEnv(MujocoEnv):
         """
         Returns the DoF of the robot (with grippers).
         """
-        if self.use_osc_controller:
+        if self.use_osc_controller and (not self.osc_raw_torques):
             dof = self.controller.action_dim
         else:
             dof = self.mujoco_robot.dof

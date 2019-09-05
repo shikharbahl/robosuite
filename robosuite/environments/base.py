@@ -4,6 +4,8 @@ from mujoco_py import load_model_from_xml
 
 from robosuite.utils import SimulationError, XMLError, MujocoPyRenderer
 
+import numpy as np
+
 REGISTERED_ENVS = {}
 
 
@@ -54,6 +56,8 @@ class MujocoEnv(metaclass=EnvMeta):
         camera_width=256,
         camera_depth=False,
         use_osc_controller=False,
+        collect_osc_data=False,
+        osc_torque_control_freq=100,
     ):
         """
         Args:
@@ -101,6 +105,13 @@ class MujocoEnv(metaclass=EnvMeta):
         self.model = None
 
         self.use_osc_controller = use_osc_controller
+        self.collect_osc_data = collect_osc_data
+        if self.collect_osc_data:
+            self.osc_mjstate_buffer = []
+            self.osc_torque_buffer = []
+            self.osc_obs_buffer = []
+            self.osc_rew_buffer = []
+            self.osc_torque_control_freq = osc_torque_control_freq
 
         # settings for camera observations
         self.use_camera_obs = use_camera_obs
@@ -129,6 +140,8 @@ class MujocoEnv(metaclass=EnvMeta):
                 "control frequency {} is invalid".format(control_freq)
             )
         self.control_timestep = 1. / control_freq
+        if self.collect_osc_data:
+            self.torque_control_timestep = 1. / self.osc_torque_control_freq
 
     def _load_model(self):
         """Loads an xml model, puts it in self.model"""
@@ -188,6 +201,17 @@ class MujocoEnv(metaclass=EnvMeta):
         self.timestep = 0
         self.done = False
 
+        if self.collect_osc_data:
+            # collect mjstates and torques applied at low-level
+            del self.osc_mjstate_buffer
+            del self.osc_torque_buffer
+            del self.osc_obs_buffer
+            del self.osc_rew_buffer
+            self.osc_mjstate_buffer = []
+            self.osc_torque_buffer = []
+            self.osc_obs_buffer = []
+            self.osc_rew_buffer = []
+
     def _get_observation(self):
         """Returns an OrderedDict containing observations [(name_string, np.array), ...]."""
         return OrderedDict()
@@ -201,10 +225,23 @@ class MujocoEnv(metaclass=EnvMeta):
 
         if self.use_osc_controller:
             policy_step = True
-            for i in range(int(self.control_timestep / self.model_timestep)):
-                self._pre_action(action, policy_step)
-                self.sim.step()
-                policy_step = False
+
+            if self.collect_osc_data:
+                for i in range(int(self.control_timestep / self.torque_control_timestep)):
+                    self.osc_mjstate_buffer.append(np.array(self.sim.get_state().flatten()))
+                    self.osc_obs_buffer.append(dict(self._get_observation()))
+                    self._pre_action(action, policy_step)
+                    for _ in range(int(self.torque_control_timestep / self.model_timestep)):
+                        self.sim.step()
+                    self.osc_torque_buffer.append(np.array(self.torques))
+                    self.osc_rew_buffer.append(self.reward())
+                    policy_step = False
+            else:
+                for i in range(int(self.control_timestep / self.model_timestep)):
+                    self._pre_action(action, policy_step)
+                    self.sim.step()
+                    policy_step = False
+
             # do this all at once to avoid floating-point inaccuracies
             self.cur_time += self.control_timestep
         else:

@@ -8,14 +8,17 @@ class TableArena(Arena):
     """Workspace that contains an empty table."""
 
     def __init__(
-        self, table_full_size=(0.8, 0.8, 0.8), table_friction=(1, 0.005, 0.0001)
+        self, table_full_size=(0.8, 0.8, 0.8), table_friction=(1, 0.005, 0.0001), add_grid_camera=False,
     ):
         """
         Args:
             table_full_size: full dimensions of the table
             friction: friction parameters of the table
         """
-        super().__init__(xml_path_completion("arenas/table_arena.xml"))
+        if add_grid_camera:
+            super().__init__(xml_path_completion("arenas/grid_arena.xml"))
+        else:
+            super().__init__(xml_path_completion("arenas/table_arena.xml"))
 
         self.table_full_size = np.array(table_full_size)
         self.table_half_size = self.table_full_size / 2
