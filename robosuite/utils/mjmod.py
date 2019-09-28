@@ -197,4 +197,13 @@ class TextureModder(modder.TextureModder):
     def randomize(self):
         self.whiten_materials()
         super().randomize()
-        super().rand_all("skybox")
+        self.rand_all("skybox")
+
+    def rand_all(self, name):
+        choices = [
+            self.rand_checker,
+            self.rand_gradient,
+            self.rand_rgb,
+            self.rand_noise,
+        ]
+        return [choice(name) for choice in choices]

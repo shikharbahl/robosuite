@@ -37,8 +37,11 @@ if __name__ == "__main__":
         control_freq=100,
         camera_name="agentview",
     )
-    env = DRWrapper(env)
+
+    # Medium: [330, 355, 360, 420, 1345, 2000]
+    env = DRWrapper(env, seed=2000)
     env.reset()
+    env.randomize_all()
     env.viewer.set_camera(camera_id=0)
 
     save_path_textured = '/Users/aqua/Documents/Workspace/Summer/svl_summer/domain_randomization/samples'
