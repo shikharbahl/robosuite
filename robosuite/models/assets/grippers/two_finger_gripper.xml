@@ -8,9 +8,11 @@
         <texture type="cube" name="gripper_tex" builtin="flat" width="32" height="192" />
         <texture type="cube" name="base_tex" builtin="flat" width="32" height="192" />
 
-        <material name="gripper_finger_mat" texture="gripper_finger_tex" />
-        <material name="gripper_mat" texture="gripper_tex" />
-        <material name="base_mat" texture="base_tex" />
+        <texture file="../../textures/dark-wood.png" type="2d" name="tex-dark-wood"/>
+
+        <material name="gripper_finger_mat" texture="tex-dark-wood" />
+        <material name="gripper_mat" texture="tex-dark-wood" />
+        <material name="base_mat" texture="tex-dark-wood" />
 
     </asset>
     <actuator>

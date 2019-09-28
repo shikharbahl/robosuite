@@ -29,12 +29,18 @@
     <texture type="cube" name="arm_tex" builtin="flat" width="32" height="192" />
     <texture type="cube" name="head_tex" builtin="flat" width="32" height="192" />
 
+    <texture file="../../textures/light-wood.png" type="2d" name="tex-light-wood"/>
+    <texture file="../../textures/dark-wood.png" type="2d" name="tex-dark-wood"/>
+    <material name="light-wood" reflectance="0.5" texrepeat="15 15" texture="tex-light-wood" texuniform="true"/>
+    <material name="dark-wood" reflectance="0.5" texrepeat="5 5" texture="tex-dark-wood" texuniform="true"/>
+    <material name="floorplane" reflectance="0.5" texrepeat="1 1" texture="texplane" texuniform="true"/>
+
     <!-- Custom mats based on body names for domain randomization -->
-    <material name="controller_mat" texture="controller_tex" />
-    <material name="pedestal_mat" texture="pedestal_tex" />
-    <material name="torso_mat" texture="torso_tex" />
-    <material name="arm_mat" texture="arm_tex" />
-    <material name="head_mat" texture="head_tex" />
+    <material name="controller_mat" texture="tex-dark-wood" />
+    <material name="pedestal_mat" texture="tex-dark-wood" />
+    <material name="torso_mat" texture="tex-dark-wood" />
+    <material name="arm_mat" texture="tex-dark-wood" />
+    <material name="head_mat" texture="tex-dark-wood" />
 
     <mesh file="meshes/pedestal.stl" name="pedestal"/>
     <mesh file="meshes/base.stl" name="base"/>

@@ -37,8 +37,12 @@ if __name__ == "__main__":
         control_freq=100,
         camera_name="agentview",
     )
-    env = DRWrapper(env)
-    env.reset()
+    # Medium: [330, 355, 360, 420, 1345, 2000]
+    # Hard:
+    env = DRWrapper(env, seed=2000)
+    #env.randomize_all()
+    env.tex_modder.whiten_materials()
+    env.tex_modder.set_rgb('cube', [0.247, 0.196, .16])
     env.viewer.set_camera(camera_id=0)
 
     save_path_textured = '/Users/aqua/Documents/Workspace/Summer/svl_summer/domain_randomization/samples'

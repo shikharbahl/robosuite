@@ -27,7 +27,6 @@ class DRWrapper(Wrapper):
         self.light_modder = LightingModder(self.env.sim, seed=self.seed)
         self.mat_modder = MaterialModder(self.env.sim, seed=self.seed)
         self.camera_modder =  CameraModder(sim=self.env.sim, camera_name=self.env.camera_name, seed=self.seed)
-        self.randomize_all()
 
     def step(self, action):
         action += np.random.normal(scale=self.action_noise, size=action.shape)

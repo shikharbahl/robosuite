@@ -1,10 +1,19 @@
 <mujoco model="table_arena">
   <asset>
-    <texture builtin="flat" height="256" rgb1="1 1 1" type="skybox" width="256"/>
+    <texture height="256" file="../textures/dark-wood.png"  type="skybox" width="256"/>
     <texture builtin="flat" height="512" name="texplane" rgb1="1 1 1" rgb2="1 1 1" type="2d" width="512"/>
     <texture builtin="flat" height="512" name="textable" width="512" rgb1="0.6 0.6 0.6"/>
-    <material name="floorplane" texture="texplane" shininess="0"/>
-    <material name="table_mat" texture="textable" />
+
+
+    <texture file="../textures/light-wood.png" type="2d" name="tex-light-wood"/>
+    <texture file="../textures/dark-wood.png" type="2d" name="tex-dark-wood"/>
+    <material name="light-wood" reflectance="0.5" texrepeat="15 15" texture="tex-light-wood" texuniform="true"/>
+    <material name="dark-wood" reflectance="0.5" texrepeat="5 5" texture="tex-dark-wood" texuniform="true"/>
+    <material name="floorplane" reflectance="0.5" texrepeat="1 1" texture="texplane" texuniform="true"/>
+
+    <material name="floorplane" texture="tex-dark-wood"/>
+    <material name="table_mat" texture="tex-dark-wood" />
+
   </asset>
   <worldbody>
     <geom condim="3" material="floorplane" name="floor" pos="0 0 0" size="0.5 0.5 .125" type="plane"/>
