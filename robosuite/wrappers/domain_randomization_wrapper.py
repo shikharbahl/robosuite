@@ -20,9 +20,12 @@ class DRWrapper(Wrapper):
         self.mat_modder = MaterialModder(self.env.sim, seed=seed)
         self.camera_modder =  CameraModder(sim=self.env.sim, camera_name=self.env.camera_name, seed=seed)
 
-    def reset(self):
+    def reset(self, seed=None):
         super().reset()
-        # Env will be updated after reset
+        self.set_seed(seed)
+
+    def set_seed(self, seed=None):
+        self.seed = int(seed)
         self.tex_modder = TextureModder(self.env.sim, seed=self.seed)
         self.light_modder = LightingModder(self.env.sim, seed=self.seed)
         self.mat_modder = MaterialModder(self.env.sim, seed=self.seed)
@@ -33,10 +36,10 @@ class DRWrapper(Wrapper):
         return super().step(action)
 
     def randomize_all(self):
+        self.randomize_camera()
         self.randomize_texture()
         self.randomize_light()
         self.randomize_material()
-        self.randomize_camera()
 
     def randomize_texture(self):
         self.tex_modder.randomize()

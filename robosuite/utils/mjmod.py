@@ -88,7 +88,7 @@ class CameraModder(modder.CameraModder):
           site in the location where the camera gaze is to be located.
     """
     def __init__(self, random_state=None, sim=None, \
-                 pos_ranges=[(-0.1, 0.1), (-0.1, 0.1), (-0.1, 0.1)],
+                 pos_ranges=[(-0.04, 0.04), (-0.04, 0.04), (-0.04, 0.04)],
                  axis=[0, 0, 1], angle_range=(-0.25, 0.25), \
                  camera_name=None, seed=None):
 
