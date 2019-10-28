@@ -1,6 +1,6 @@
 <mujoco model="table_arena">
   <asset>
-    <texture builtin="flat" height="256" rgb1="1 1 1" type="skybox" width="256"/>
+    <texture builtin="flat" height="480" rgb1="1 1 1" type="skybox" width="640"/>
     <texture builtin="flat" height="512" name="texplane" rgb1="1 1 1" rgb2="1 1 1" type="2d" width="512"/>
     <texture builtin="flat" height="512" name="textable" width="512" rgb1="0.6 0.6 0.6"/>
     <material name="floorplane" texture="texplane" shininess="0"/>

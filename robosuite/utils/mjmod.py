@@ -1,5 +1,8 @@
+import os
 import copy
 import numpy as np
+from PIL import Image
+from torchvision import datasets
 from mujoco_py import modder
 
 
@@ -171,8 +174,10 @@ class TextureModder(modder.TextureModder):
     """
     Extension of the TextureModder in MujocoPy
     """
-    def __init__(self, sim, seed=None):
+    def __init__(self, sim, seed=None, path=None):
         if seed is not None: np.random.seed(seed)
+        self.path = path
+        self.path ='/Users/aqua/Documents/workspace/svl/robosuite/robosuite/png-ZuBuD'
         super().__init__(sim, random_state=seed)
 
     def whiten_materials(self, geom_names=None):
@@ -196,8 +201,24 @@ class TextureModder(modder.TextureModder):
 
     def randomize(self):
         self.whiten_materials()
-        super().randomize()
+        for name in self.sim.model.geom_names:
+            self.rand_all(name)
         self.rand_all("skybox")
+
+    def set_existing_texture(self, name):
+        bitmap = self.get_texture(name).bitmap
+        img = Image.new("RGB", (bitmap.shape[1], bitmap.shape[0]))
+
+        img_path = self.path + '/' + np.random.choice(os.listdir(self.path))
+        img = Image.open(img_path).convert('RGB')
+        img = img.convert('RGB')
+        img = np.array(img)
+        img = np.concatenate([img] * int(bitmap.shape[0] / img.shape[0]), 0)
+        img.resize(bitmap.shape)
+        bitmap[..., :] = img
+
+        self.upload_texture(name)
+
 
     def rand_all(self, name):
         choices = [
@@ -206,4 +227,8 @@ class TextureModder(modder.TextureModder):
             self.rand_rgb,
             self.rand_noise,
         ]
+
+        if name == 'skybox':
+            return self.set_existing_texture(name)
+
         return [choice(name) for choice in choices]

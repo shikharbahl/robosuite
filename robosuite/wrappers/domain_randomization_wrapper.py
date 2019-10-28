@@ -11,11 +11,11 @@ from robosuite.utils.mjmod import TextureModder, LightingModder, MaterialModder,
 class DRWrapper(Wrapper):
     env = None
 
-    def __init__(self, env, seed=None):
+    def __init__(self, env, seed=None, path=None):
         super().__init__(env)
         self.action_noise = 1  # TODO: Should this be argument
         self.seed = seed
-        self.tex_modder = TextureModder(self.env.sim, seed=seed)
+        self.tex_modder = TextureModder(self.env.sim, seed=seed, path=path)
         self.light_modder = LightingModder(self.env.sim, seed=seed)
         self.mat_modder = MaterialModder(self.env.sim, seed=seed)
         self.camera_modder =  CameraModder(sim=self.env.sim, camera_name=self.env.camera_name, seed=seed)
